@@ -2,6 +2,7 @@ module Run (run) where
 
 import Database.PostgreSQL.Simple (ConnectInfo (..))
 import Database.PostgreSQL.Simple.Utilities (createConnectionPool)
+import Migration (addMigration, migrateAll, rollback)
 import Qtility
 import RIO.Process (mkDefaultProcessContext)
 import Types
@@ -30,6 +31,6 @@ run options command = do
     runRIO app $ runCommand command
 
 runCommand :: AppCommand -> RIO App ()
-runCommand Migrate = undefined
-runCommand (Rollback _n) = undefined
-runCommand (AddMigration _name) = undefined
+runCommand Migrate = migrateAll
+runCommand (Rollback n) = rollback n
+runCommand (AddMigration name) = addMigration name

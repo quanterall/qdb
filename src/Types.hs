@@ -4,6 +4,7 @@ module Types where
 
 import Data.Pool (Pool)
 import Database.PostgreSQL.Simple (Connection)
+import Database.PostgreSQL.Simple.Utilities (HasPostgresqlPool (..))
 import Qtility
 import RIO.Process
 
@@ -20,7 +21,8 @@ data Options = Options
     _optionsPort :: !Word16,
     _optionsUser :: !String,
     _optionsDatabase :: !String,
-    _optionsPassword :: !String
+    _optionsPassword :: !String,
+    _optionsMigrationsPath :: !FilePath
   }
   deriving (Eq, Show, Generic)
 
@@ -38,3 +40,6 @@ instance HasLogFunc App where
 
 instance HasProcessContext App where
   processContextL = appProcessContext
+
+instance HasPostgresqlPool App where
+  postgresqlPoolL = appSqlPool

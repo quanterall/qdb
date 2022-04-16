@@ -5,23 +5,32 @@ module Main (main) where
 import Options.Applicative.Simple
 import qualified Paths_qdb
 import Qtility
-import RIO.Process
 import Run
 import Types
 
 main :: IO ()
 main = do
-  (options, command) <-
+  (options, command') <-
     simpleOptions
       $(simpleVersion Paths_qdb.version)
       "qdb"
       "Tool for managing databases: migrations, etc."
       parseOptions
       addCommands
-  run options command
+  run options command'
   where
     addCommands = do
-      addCommand "migrate" "Migrate the database" id (pure Migrate)
+      addCommand "migrate" "Apply all unapplied migrations" id (pure Migrate)
+      addCommand
+        "rollback"
+        "Roll back an amount of migrations"
+        id
+        (Rollback <$> argument auto (metavar "AMOUNT"))
+      addCommand
+        "add-migration"
+        "Add a migration in the migrations directory"
+        id
+        (AddMigration <$> strArgument (metavar "MIGRATION_NAME"))
 
 parseOptions :: Parser Options
 parseOptions =
@@ -63,4 +72,10 @@ parseOptions =
           <> short 'd'
           <> metavar "DATABASE"
           <> help "Database to use"
+      )
+    <*> strOption
+      ( long "migrations"
+          <> short 'm'
+          <> metavar "MIGRATIONS_PATH"
+          <> help "Migrations directory"
       )
