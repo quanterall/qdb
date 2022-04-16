@@ -1,0 +1,17 @@
+resolver: lts-18.14
+
+packages:
+- .
+
+extra-deps:
+- github: quanterall/qtility
+  commit: f8bd42f37965f789e3237bdee8b8c87fa0665a2f
+  subdirs:
+  - qtility
+  # nix-sha256: sha256-LrzW1x9WLHs8eM1zNA8VcaL4TSvdTcDq15OJTt8+1SM=
+
+nix:
+  enable: false
+  packages: 
+  - zlib
+  - postgresql

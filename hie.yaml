@@ -1,0 +1,13 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "qdb:lib"
+
+    - path: "./app/Main.hs"
+      component: "qdb:exe:qdb-exe"
+
+    - path: "./app/Paths_qdb.hs"
+      component: "qdb:exe:qdb-exe"
+
+    - path: "./test"
+      component: "qdb:test:qdb-test"
