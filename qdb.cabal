@@ -27,7 +27,6 @@ library
   exposed-modules:
       Run
       Types
-      Util
   other-modules:
       Paths_qdb
   hs-source-dirs:
@@ -79,7 +78,9 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -Wwarn=deprecations -Werror=incomplete-patterns
   build-depends:
       base >=4.11 && <10
+    , postgresql-simple
     , qtility
+    , resource-pool
     , rio
   default-language: Haskell2010
 
@@ -137,8 +138,10 @@ executable qdb-exe
   build-depends:
       base >=4.11 && <10
     , optparse-simple
+    , postgresql-simple
     , qdb
     , qtility
+    , resource-pool
     , rio
   default-language: Haskell2010
 
@@ -198,7 +201,9 @@ test-suite qdb-test
   build-depends:
       base >=4.11 && <10
     , hspec
+    , postgresql-simple
     , qdb
     , qtility
+    , resource-pool
     , rio
   default-language: Haskell2010

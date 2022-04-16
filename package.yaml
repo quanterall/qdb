@@ -23,6 +23,8 @@ dependencies:
 - base >= 4.11 && < 10
 - qtility
 - rio
+- postgresql-simple
+- resource-pool
 
 default-extensions:
 - ApplicativeDo

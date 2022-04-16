@@ -1,21 +1,40 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Types where
 
+import Data.Pool (Pool)
+import Database.PostgreSQL.Simple (Connection)
 import Qtility
 import RIO.Process
 
+data AppCommand
+  = Migrate
+  | Rollback !Int
+  | AddMigration !String
+  deriving (Eq, Show)
+
 -- | Command line arguments
 data Options = Options
-  { optionsVerbose :: !Bool
+  { _optionsVerbose :: !Bool,
+    _optionsHost :: !String,
+    _optionsPort :: !Word16,
+    _optionsUser :: !String,
+    _optionsDatabase :: !String,
+    _optionsPassword :: !String
   }
+  deriving (Eq, Show, Generic)
 
 data App = App
-  { appLogFunc :: !LogFunc
-  , appProcessContext :: !ProcessContext
-  , appOptions :: !Options
-  -- Add other app-specific configuration information here
+  { _appLogFunc :: !LogFunc,
+    _appProcessContext :: !ProcessContext,
+    _appOptions :: !Options,
+    _appSqlPool :: !(Pool Connection)
   }
 
+foldMapM makeLenses [''Options, ''App]
+
 instance HasLogFunc App where
-  logFuncL = lens appLogFunc (\x y -> x { appLogFunc = y })
+  logFuncL = appLogFunc
+
 instance HasProcessContext App where
-  processContextL = lens appProcessContext (\x y -> x { appProcessContext = y })
+  processContextL = appProcessContext
