@@ -86,7 +86,7 @@ library:
   source-dirs: src
 
 executables:
-  qdb-exe:
+  qdb:
     main:                Main.hs
     source-dirs:         app
     dependencies:

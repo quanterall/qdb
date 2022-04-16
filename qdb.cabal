@@ -85,7 +85,7 @@ library
     , rio
   default-language: Haskell2010
 
-executable qdb-exe
+executable qdb
   main-is: Main.hs
   other-modules:
       Paths_qdb
