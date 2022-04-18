@@ -31,6 +31,16 @@ main = do
         "Add a migration in the migrations directory"
         id
         (AddMigration <$> strArgument (metavar "MIGRATION_NAME"))
+      addCommand
+        "list-migrations"
+        "List all migrations in the database"
+        id
+        (pure ListMigrations)
+      addCommand
+        "update-migrations"
+        "Update the migrations in the database to match your migrations directory"
+        id
+        (pure UpdateMigrations)
 
 parseOptions :: Parser Options
 parseOptions =

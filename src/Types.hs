@@ -12,6 +12,8 @@ data AppCommand
   = Migrate
   | Rollback !Int
   | AddMigration !String
+  | UpdateMigrations
+  | ListMigrations
   deriving (Eq, Show)
 
 -- | Command line arguments
