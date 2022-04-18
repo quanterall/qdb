@@ -14,6 +14,7 @@ data AppCommand
   | AddMigration !String
   | UpdateMigrations
   | ListMigrations
+  | RemoveMigration !FilePath
   deriving (Eq, Show)
 
 -- | Command line arguments

@@ -4,7 +4,7 @@ import Database.PostgreSQL.Simple.Migration
 import qualified Database.PostgreSQL.Simple.Migration as Migration
 import Database.PostgreSQL.Simple.Migration.Queries
 import Database.PostgreSQL.Simple.Migration.Types
-import Database.PostgreSQL.Simple.Utilities (runDB)
+import Database.PostgreSQL.Simple.Utilities (DB, runDB)
 import Qtility
 import RIO.FilePath ((</>))
 import qualified RIO.Text as Text
@@ -34,7 +34,12 @@ updateMigrations :: RIO App ()
 updateMigrations = do
   migrationsPath <- view (appOptions . optionsMigrationsPath)
   migrations <- migrationsInDirectory migrationsPath
-  forM_ migrations $ \migration -> runDB $ updateMigration Nothing migration
+  forM_ migrations $ \migration ->
+    runDB $ handle (handleMigrationNotFound migration) $ updateMigration Nothing migration
+  where
+    handleMigrationNotFound :: Migration -> MigrationNotFound -> DB ()
+    handleMigrationNotFound migration _ = do
+      insertMigrations Nothing [migration]
 
 listMigrations :: Bool -> RIO App ()
 listMigrations verbose = do
@@ -67,6 +72,10 @@ listMigrations verbose = do
                   if migration ^. migrationIsApplied then "Applied" else "Not applied"
                 ]
     liftIO $ putStrLn outputString
+
+removeMigration' :: FilePath -> RIO App ()
+removeMigration' filename = do
+  runDB $ removeMigration Nothing filename
 
 migrationTemplate :: Text
 migrationTemplate =

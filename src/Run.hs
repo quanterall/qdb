@@ -2,7 +2,14 @@ module Run (run) where
 
 import Database.PostgreSQL.Simple (ConnectInfo (..))
 import Database.PostgreSQL.Simple.Utilities (createConnectionPool)
-import Migration (addMigration, listMigrations, migrateAll, rollback, updateMigrations)
+import Migration
+  ( addMigration,
+    listMigrations,
+    migrateAll,
+    removeMigration',
+    rollback,
+    updateMigrations,
+  )
 import Qtility
 import RIO.Process (mkDefaultProcessContext)
 import Types
@@ -36,3 +43,4 @@ runCommand _verbose (Rollback n) = rollback n
 runCommand _verbose (AddMigration name) = addMigration name
 runCommand _verbose UpdateMigrations = updateMigrations
 runCommand verbose ListMigrations = listMigrations verbose
+runCommand _verbose (RemoveMigration filename) = removeMigration' filename

@@ -41,6 +41,11 @@ main = do
         "Update the migrations in the database to match your migrations directory"
         id
         (pure UpdateMigrations)
+      addCommand
+        "remove-migration"
+        "Remove a migration from the database by filename"
+        id
+        (RemoveMigration <$> strArgument (metavar "MIGRATION_NAME"))
 
 parseOptions :: Parser Options
 parseOptions =
