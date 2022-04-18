@@ -62,16 +62,16 @@ parseOptions =
           <> help "User to connect as"
       )
     <*> strOption
-      ( long "password"
-          <> short 'p'
-          <> metavar "PASSWORD"
-          <> help "Password to use"
-      )
-    <*> strOption
       ( long "database"
           <> short 'd'
           <> metavar "DATABASE"
           <> help "Database to use"
+      )
+    <*> strOption
+      ( long "password"
+          <> short 'p'
+          <> metavar "PASSWORD"
+          <> help "Password to use"
       )
     <*> strOption
       ( long "migrations"
