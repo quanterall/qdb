@@ -1,11 +1,11 @@
 module Migration where
 
-import Database.PostgreSQL.Simple.Migration
-import qualified Database.PostgreSQL.Simple.Migration as Migration
-import Database.PostgreSQL.Simple.Migration.Queries
-import Database.PostgreSQL.Simple.Migration.Types
-import Database.PostgreSQL.Simple.Utilities (DB, runDB)
 import Qtility
+import Qtility.Database (DB, runDB)
+import Qtility.Database.Migration
+import qualified Qtility.Database.Migration as Migration
+import Qtility.Database.Migration.Queries
+import Qtility.Database.Types
 import RIO.FilePath ((</>))
 import qualified RIO.Text as Text
 import RIO.Time (defaultTimeLocale, formatTime, getCurrentTime)

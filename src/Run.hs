@@ -1,7 +1,6 @@
 module Run (run) where
 
 import Database.PostgreSQL.Simple (ConnectInfo (..))
-import Database.PostgreSQL.Simple.Utilities (createConnectionPool)
 import Migration
   ( addMigration,
     listMigrations,
@@ -11,6 +10,7 @@ import Migration
     updateMigrations,
   )
 import Qtility
+import Qtility.Database (createConnectionPool)
 import RIO.Process (mkDefaultProcessContext)
 import Types
 

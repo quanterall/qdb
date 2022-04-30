@@ -4,8 +4,8 @@ module Types where
 
 import Data.Pool (Pool)
 import Database.PostgreSQL.Simple (Connection)
-import Database.PostgreSQL.Simple.Utilities (HasPostgresqlPool (..))
 import Qtility
+import Qtility.Database (HasPostgresqlPool (..))
 import RIO.Process
 
 data AppCommand
