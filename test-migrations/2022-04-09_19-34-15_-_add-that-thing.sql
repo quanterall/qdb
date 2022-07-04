@@ -1,4 +1,4 @@
-CREATE TABLE that_thing IF NOT EXISTS (
+CREATE TABLE IF NOT EXISTS that_thing (
   id bigserial PRIMARY KEY,
   name text NOT NULL,
   extra_field text,
