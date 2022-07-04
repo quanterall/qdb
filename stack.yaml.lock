@@ -5,34 +5,34 @@
 
 packages:
 - completed:
-    size: 57892
+    size: 59907
     subdir: qtility
-    url: https://github.com/quanterall/qtility/archive/aac174d0d953a5bd04dc75c80977dc5b0e0939bf.tar.gz
+    url: https://github.com/quanterall/qtility/archive/feebd3658c48ca15caea9007f2a545019a246521.tar.gz
     name: qtility
-    version: 1.0.0
-    sha256: d230fc3b3e76fbc6e3e962557728d69c7de7112d8e5cf61626db99642f1bb4c8
+    version: 1.3.0
+    sha256: 62dc0e6268b21ee6acad450b0d89e747fed123a97bede7d809370e4c7e0f74ea
     pantry-tree:
-      size: 1980
-      sha256: 78e75bd664c033ecc4643422a2153bd0538ec8d4b85a7e275c7e53c57b56980b
+      size: 1657
+      sha256: 3b82085b41c38d5895b0ed6561eb2e35e1aa308483def52d04825ec25377f6be
   original:
     subdir: qtility
-    url: https://github.com/quanterall/qtility/archive/aac174d0d953a5bd04dc75c80977dc5b0e0939bf.tar.gz
+    url: https://github.com/quanterall/qtility/archive/feebd3658c48ca15caea9007f2a545019a246521.tar.gz
 - completed:
-    size: 57892
+    size: 59907
     subdir: qtility-db
-    url: https://github.com/quanterall/qtility/archive/aac174d0d953a5bd04dc75c80977dc5b0e0939bf.tar.gz
+    url: https://github.com/quanterall/qtility/archive/feebd3658c48ca15caea9007f2a545019a246521.tar.gz
     name: qtility-db
     version: 0.0.0
-    sha256: d230fc3b3e76fbc6e3e962557728d69c7de7112d8e5cf61626db99642f1bb4c8
+    sha256: 62dc0e6268b21ee6acad450b0d89e747fed123a97bede7d809370e4c7e0f74ea
     pantry-tree:
-      size: 624
-      sha256: e89c5c2225230ddc647a6dc4259d5aadc35b5b8f8776c79869edbb92e6447843
+      size: 1321
+      sha256: 17674f989b3e6fac24d17d524c3d512048135e86727b7c6a6695b967d3ebb972
   original:
     subdir: qtility-db
-    url: https://github.com/quanterall/qtility/archive/aac174d0d953a5bd04dc75c80977dc5b0e0939bf.tar.gz
+    url: https://github.com/quanterall/qtility/archive/feebd3658c48ca15caea9007f2a545019a246521.tar.gz
 snapshots:
 - completed:
-    size: 586069
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/14.yaml
-    sha256: 87842ecbaa8ca9cee59a7e6be52369dbed82ed075cb4e0d152614a627e8fd488
-  original: lts-18.14
+    size: 590100
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/28.yaml
+    sha256: 428ec8d5ce932190d3cbe266b9eb3c175cd81e984babf876b64019e2cbe4ea68
+  original: lts-18.28

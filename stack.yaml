@@ -1,15 +1,15 @@
-resolver: lts-18.14
+resolver: lts-18.28
 
 packages:
 - .
 
 extra-deps:
 - github: quanterall/qtility
-  commit: ecfc497f7f7e2dc5974cd8a28ba9c03bbee49725
+  commit: feebd3658c48ca15caea9007f2a545019a246521
   subdirs:
   - qtility
   - qtility-db
-  # nix-sha256: sha256-V05hNO9ZCJNITNfSqTiODqcWmkDmBm8EouDWr8UT8Yc=
+  # nix-sha256: sha256-GKn9DqlG5TdJVoUXRaYxXN8UPxgSq/coswpc4O049Eg=
 
 nix:
   enable: false

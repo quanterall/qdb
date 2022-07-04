@@ -152,7 +152,6 @@ test-suite qdb-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      UtilSpec
       Paths_qdb
   hs-source-dirs:
       test
