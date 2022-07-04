@@ -12,9 +12,8 @@ import RIO.Time (defaultTimeLocale, formatTime, getCurrentTime)
 import System.IO (putStrLn)
 import Types
 
-migrateAll :: RIO App ()
-migrateAll = do
-  migrationsPath <- view (appOptions . optionsMigrationsPath)
+migrateAll :: MigrationsPath -> RIO App ()
+migrateAll (MigrationsPath migrationsPath) = do
   _ <- createMigrationTable Nothing migrationsPath
   runDB $ do
     unappliedMigrations <- getUnappliedMigrations Nothing
@@ -23,16 +22,14 @@ migrateAll = do
 rollback :: Int -> RIO App ()
 rollback n = runDB $ rollbackLastNMigrations Nothing (fromIntegral n)
 
-addMigration :: String -> RIO App ()
-addMigration name = do
-  migrationsPath <- view (appOptions . optionsMigrationsPath)
+addMigration :: String -> MigrationsPath -> IO ()
+addMigration name (MigrationsPath migrationsPath) = do
   timestamp <- getCurrentTimeInFormat
   let filename = timestamp <> "_-_" <> name <> ".sql"
   liftIO $ writeFileUtf8 (migrationsPath </> filename) migrationTemplate
 
-updateMigrations :: RIO App ()
-updateMigrations = do
-  migrationsPath <- view (appOptions . optionsMigrationsPath)
+updateMigrations :: MigrationsPath -> RIO App ()
+updateMigrations (MigrationsPath migrationsPath) = do
   migrations <- migrationsInDirectory migrationsPath
   forM_ migrations $ \migration ->
     runDB $ handle (handleMigrationNotFound migration) $ updateMigration Nothing migration
