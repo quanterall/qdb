@@ -80,6 +80,8 @@ library
   build-depends:
       base >=4.11 && <10
     , postgresql-simple
+    , qaws
+    , qaws-secretsmanager
     , qtility
     , qtility-db
     , resource-pool
@@ -141,6 +143,8 @@ executable qdb
       base >=4.11 && <10
     , optparse-simple
     , postgresql-simple
+    , qaws
+    , qaws-secretsmanager
     , qdb
     , qtility
     , qtility-db
@@ -204,6 +208,8 @@ test-suite qdb-test
       base >=4.11 && <10
     , hspec
     , postgresql-simple
+    , qaws
+    , qaws-secretsmanager
     , qdb
     , qtility
     , qtility-db

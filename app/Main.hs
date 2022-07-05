@@ -3,6 +3,7 @@
 module Main (main) where
 
 import Database.PostgreSQL.Simple (ConnectInfo (..))
+import Network.AWS.QAWS.SecretsManager.Types (SecretARN (..))
 import Options.Applicative.Simple
 import qualified Paths_qdb
 import Qtility
@@ -25,12 +26,12 @@ main = do
         "migrate"
         "Apply all unapplied migrations"
         id
-        (Migrate <$> parseMigrationsPath <*> parseConnectInfo)
+        (Migrate <$> parseMigrationsPath <*> parseConnectionInfo)
       addCommand
         "rollback"
         "Roll back an amount of migrations"
         id
-        (Rollback <$> argument auto (metavar "AMOUNT") <*> parseConnectInfo)
+        (Rollback <$> argument auto (metavar "AMOUNT" <> value 1) <*> parseConnectionInfo)
       addCommand
         "add-migration"
         "Add a migration in the migrations directory"
@@ -40,17 +41,17 @@ main = do
         "list-migrations"
         "List all migrations in the database"
         id
-        (ListMigrations <$> parseConnectInfo)
+        (ListMigrations <$> parseConnectionInfo)
       addCommand
         "update-migrations"
         "Update the migrations in the database to match your migrations directory"
         id
-        (UpdateMigrations <$> parseMigrationsPath <*> parseConnectInfo)
+        (UpdateMigrations <$> parseMigrationsPath <*> parseConnectionInfo)
       addCommand
         "remove-migration"
         "Remove a migration from the database by filename"
         id
-        (RemoveMigration <$> strArgument (metavar "MIGRATION_NAME") <*> parseConnectInfo)
+        (RemoveMigration <$> strArgument (metavar "MIGRATION_NAME") <*> parseConnectionInfo)
 
 parseOptions :: Parser Options
 parseOptions =
@@ -106,4 +107,18 @@ parseConnectInfo =
           <> short 'd'
           <> metavar "DATABASE"
           <> help "Database to use"
+      )
+
+parseConnectionInfo :: Parser ConnectionInfo
+parseConnectionInfo =
+  (RDSConnection <$> parseArn) <|> (ManualConnection <$> parseConnectInfo)
+
+parseArn :: Parser SecretARN
+parseArn =
+  SecretARN
+    <$> strOption
+      ( long "secret-arn"
+          <> short 's'
+          <> metavar "SECRET_ARN"
+          <> help "Secret ARN to use for getting connection info"
       )

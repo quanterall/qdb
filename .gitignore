@@ -3,3 +3,4 @@
 tarballs/
 .stack-work/
 .devcontainer/build
+*.env

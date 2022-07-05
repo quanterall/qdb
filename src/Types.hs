@@ -4,6 +4,7 @@ module Types where
 
 import Data.Pool (Pool)
 import Database.PostgreSQL.Simple (ConnectInfo, Connection)
+import Network.AWS.QAWS.SecretsManager.Types (SecretARN)
 import Qtility
 import Qtility.Database (HasPostgresqlPool (..))
 import RIO.Process
@@ -11,13 +12,18 @@ import RIO.Process
 newtype MigrationsPath = MigrationsPath {unMigrationsPath :: FilePath}
   deriving (Eq, Show)
 
+data ConnectionInfo
+  = RDSConnection !SecretARN
+  | ManualConnection !ConnectInfo
+  deriving (Eq, Show)
+
 data AppCommand
-  = Migrate !MigrationsPath !ConnectInfo
-  | Rollback !Int !ConnectInfo
+  = Migrate !MigrationsPath !ConnectionInfo
+  | Rollback !Int !ConnectionInfo
   | AddMigration !String !MigrationsPath
-  | UpdateMigrations !MigrationsPath !ConnectInfo
-  | ListMigrations !ConnectInfo
-  | RemoveMigration !FilePath !ConnectInfo
+  | UpdateMigrations !MigrationsPath !ConnectionInfo
+  | ListMigrations !ConnectionInfo
+  | RemoveMigration !FilePath !ConnectionInfo
   deriving (Eq, Show)
 
 newtype Options = Options {_optionsVerbose :: Bool}

@@ -1,6 +1,5 @@
 module Run (run) where
 
-import Database.PostgreSQL.Simple (ConnectInfo (..))
 import Migration
   ( addMigration,
     listMigrations,
@@ -9,6 +8,8 @@ import Migration
     rollback,
     updateMigrations,
   )
+import Network.AWS.QAWS
+import Network.AWS.QAWS.SecretsManager (createConnectionPoolForSecretArn')
 import Qtility
 import Qtility.Database (createConnectionPool)
 import RIO.Process (mkDefaultProcessContext)
@@ -32,10 +33,14 @@ run options (RemoveMigration name connectInfo) = do
   app <- createApp options connectInfo
   runRIO app $ removeMigration' name
 
-createApp :: Options -> ConnectInfo -> IO App
-createApp options connectInfo = do
+createApp :: Options -> ConnectionInfo -> IO App
+createApp options connectionInfo = do
   lo <- logOptionsHandle stderr (options ^. optionsVerbose)
   pc <- mkDefaultProcessContext
-  pool <- createConnectionPool 10 connectInfo
+  pool <- case connectionInfo of
+    ManualConnection connectInfo -> createConnectionPool 10 connectInfo
+    RDSConnection secretArn -> do
+      awsEnv <- loadAWSEnvironment ".env"
+      createConnectionPoolForSecretArn' awsEnv 10 secretArn
   withLogFunc lo $ \lf -> do
     pure App {_appLogFunc = lf, _appProcessContext = pc, _appOptions = options, _appSqlPool = pool}

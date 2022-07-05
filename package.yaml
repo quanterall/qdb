@@ -23,6 +23,8 @@ dependencies:
 - base >= 4.11 && < 10
 - qtility
 - qtility-db
+- qaws
+- qaws-secretsmanager
 - rio
 - postgresql-simple
 - resource-pool
