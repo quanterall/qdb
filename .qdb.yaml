@@ -1,0 +1,2 @@
+migrationsPath: test-migrations
+secretArn: secret

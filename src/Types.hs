@@ -9,6 +9,17 @@ import Qtility
 import Qtility.Database (HasPostgresqlPool (..))
 import RIO.Process
 
+data ConfigurationFileOptions = ConfigurationFileOptions
+  { _configurationFileOptionsMigrationsPath :: !(Maybe FilePath),
+    _configurationFileOptionsSecretArn :: !(Maybe String),
+    _configurationFileOptionsHost :: !(Maybe String),
+    _configurationFileOptionsPort :: !(Maybe Word16),
+    _configurationFileOptionsUser :: !(Maybe String),
+    _configurationFileOptionsPassword :: !(Maybe String),
+    _configurationFileOptionsDatabase :: !(Maybe String)
+  }
+  deriving (Eq, Show, Generic)
+
 newtype MigrationsPath = MigrationsPath {unMigrationsPath :: FilePath}
   deriving (Eq, Show)
 
@@ -35,6 +46,8 @@ data App = App
     _appOptions :: !Options,
     _appSqlPool :: !(Pool Connection)
   }
+
+foldMapM deriveLensAndJSON [''ConfigurationFileOptions]
 
 foldMapM makeLenses [''Options, ''App]
 

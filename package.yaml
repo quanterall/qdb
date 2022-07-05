@@ -28,6 +28,7 @@ dependencies:
 - rio
 - postgresql-simple
 - resource-pool
+- yaml
 
 default-extensions:
 - ApplicativeDo
