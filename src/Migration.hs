@@ -1,7 +1,7 @@
 module Migration where
 
 import Qtility
-import Qtility.Database (DB, runDB)
+import Qtility.Database (DB, HasPostgresqlPool (..), runDB)
 import Qtility.Database.Migration
 import qualified Qtility.Database.Migration as Migration
 import Qtility.Database.Migration.Queries
@@ -12,23 +12,29 @@ import RIO.Time (defaultTimeLocale, formatTime, getCurrentTime)
 import System.IO (putStrLn)
 import Types
 
-migrateAll :: MigrationsPath -> RIO App ()
+migrateAll ::
+  (MonadReader env m, MonadThrow m, MonadIO m, HasPostgresqlPool env) =>
+  MigrationsPath ->
+  m ()
 migrateAll (MigrationsPath migrationsPath) = do
   _ <- createMigrationTable Nothing migrationsPath
   runDB $ do
     unappliedMigrations <- getUnappliedMigrations Nothing
     applyMigrations Nothing unappliedMigrations
 
-rollback :: Int -> RIO App ()
+rollback :: (MonadReader env m, MonadIO m, HasPostgresqlPool env) => Int -> m ()
 rollback n = runDB $ rollbackLastNMigrations Nothing (fromIntegral n)
 
-addMigration :: String -> MigrationsPath -> IO ()
+addMigration :: (MonadIO m) => String -> MigrationsPath -> m ()
 addMigration name (MigrationsPath migrationsPath) = do
   timestamp <- getCurrentTimeInFormat
   let filename = timestamp <> "_-_" <> name <> ".sql"
   liftIO $ writeFileUtf8 (migrationsPath </> filename) migrationTemplate
 
-updateMigrations :: MigrationsPath -> RIO App ()
+updateMigrations ::
+  (MonadReader env m, MonadIO m, MonadThrow m, HasPostgresqlPool env) =>
+  MigrationsPath ->
+  m ()
 updateMigrations (MigrationsPath migrationsPath) = do
   migrations <- migrationsInDirectory migrationsPath
   forM_ migrations $ \migration ->
@@ -38,7 +44,7 @@ updateMigrations (MigrationsPath migrationsPath) = do
     handleMigrationNotFound migration _ = do
       insertMigrations Nothing [migration]
 
-listMigrations :: Bool -> RIO App ()
+listMigrations :: (MonadReader env m, MonadIO m, HasPostgresqlPool env) => Bool -> m ()
 listMigrations verbose = do
   migrations <- runDB $ getMigrations Nothing
   forM_ migrations $ \migration -> do
@@ -70,7 +76,7 @@ listMigrations verbose = do
                 ]
     liftIO $ putStrLn outputString
 
-removeMigration' :: FilePath -> RIO App ()
+removeMigration' :: (MonadReader env m, MonadIO m, HasPostgresqlPool env) => FilePath -> m ()
 removeMigration' filename = do
   runDB $ removeMigration Nothing filename
 
