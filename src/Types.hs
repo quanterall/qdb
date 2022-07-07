@@ -37,7 +37,7 @@ data AppCommand
   | RemoveMigration !FilePath !ConnectionInfo
   deriving (Eq, Show)
 
-newtype Options = Options {_optionsVerbose :: Bool}
+data Options = Options {_optionsVerbose :: !Bool, _optionsConfigurationPath :: !FilePath}
   deriving (Eq, Show, Generic)
 
 data App = App

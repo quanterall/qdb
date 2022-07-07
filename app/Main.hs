@@ -11,11 +11,19 @@ import Qtility
 import qualified RIO.ByteString as ByteString
 import qualified RIO.Text as Text
 import Run
+import qualified System.Environment as Environment
 import Types
 
 main :: IO ()
 main = do
-  configurationOptions <- readConfigurationFile `catchIO` handleConfigurationFileError
+  configurationPathFromEnvironment <-
+    (Just <$> readEnvironmentVariable "QDB_CONFIG")
+      `catch` \(_e :: ReadEnvironmentVariableError) -> pure $ Just ".qdb.yaml"
+  arguments <- Environment.getArgs
+  let configurationPath =
+        fromMaybe ".qdb.yaml" $ findConfigurationPath arguments <|> configurationPathFromEnvironment
+  configurationOptions <-
+    readConfigurationFile configurationPath `catchIO` handleConfigurationFileError
   (options, command') <-
     simpleOptions
       $(simpleVersion Paths_qdb.version)
@@ -92,6 +100,13 @@ parseOptions =
           <> short 'v'
           <> help "Verbose output?"
       )
+    <*> strOption
+      ( long "config"
+          <> short 'c'
+          <> metavar "PATH"
+          <> help "Path to the configuration file"
+          <> value ".qdb.yaml"
+      )
 
 parseMigrationsPath :: ConfigurationFileOptions -> Parser MigrationsPath
 parseMigrationsPath options =
@@ -160,7 +175,20 @@ parseArn maybeArn =
           <> maybe mempty (Text.pack >>> value) maybeArn
       )
 
-readConfigurationFile :: IO ConfigurationFileOptions
-readConfigurationFile = do
-  bytes <- ByteString.readFile ".qdb.yaml"
+readConfigurationFile :: FilePath -> IO ConfigurationFileOptions
+readConfigurationFile configurationPath = do
+  bytes <- ByteString.readFile configurationPath
   decodeThrow bytes
+
+findConfigurationPath :: [String] -> Maybe FilePath
+findConfigurationPath [] = Nothing
+findConfigurationPath (argument' : arguments)
+  | argument' == "--config" =
+    case arguments of
+      [] -> Nothing
+      (configurationPath : _) -> Just configurationPath
+  | argument' == "-c" =
+    case arguments of
+      [] -> Nothing
+      (configurationPath : _) -> Just configurationPath
+  | otherwise = findConfigurationPath arguments
