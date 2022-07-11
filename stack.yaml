@@ -8,13 +8,13 @@ extra-deps:
 - amazonka-1.6.1@sha256:f58b63e83876f93aa03c54e54b3eb8ba9358af93819d41f4a5a8f8b7d8b8399c,3544
 - amazonka-secretsmanager-1.6.1@sha256:f3e7266e8b19b214c721c49c50d24b7a6cc1ed280a1e481eabf08dc507e38f5d,3795
 - github: quanterall/qtility
-  commit: 7b110387b9dc8e56dacf9bfa402a5f6226aa219a
+  commit: 8dcaae052367a050008d5ced674cb3ed05dabbdf
   subdirs:
   - qtility
   - qtility-db
   - qaws
   - qaws-secretsmanager
-  # nix-sha256: sha256-GKn9DqlG5TdJVoUXRaYxXN8UPxgSq/coswpc4O049Eg=
+  # nix-sha256: sha256-XOLsC30s081SdVQgPTABUhmhgikuFrRZsfdM1sGC4TI=
 
 nix:
   enable: false
