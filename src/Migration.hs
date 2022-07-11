@@ -17,13 +17,13 @@ migrateAll ::
   MigrationsPath ->
   m ()
 migrateAll (MigrationsPath migrationsPath) = do
-  _ <- createMigrationTable Nothing migrationsPath
+  _ <- createMigrationTable schemaName migrationsPath
   runDB $ do
-    unappliedMigrations <- getUnappliedMigrations Nothing
-    applyMigrations Nothing unappliedMigrations
+    unappliedMigrations <- getUnappliedMigrations schemaName
+    applyMigrations schemaName unappliedMigrations
 
 rollback :: (MonadReader env m, MonadIO m, HasPostgresqlPool env) => Int -> m ()
-rollback n = runDB $ rollbackLastNMigrations Nothing (fromIntegral n)
+rollback n = runDB $ rollbackLastNMigrations schemaName (fromIntegral n)
 
 addMigration :: (MonadIO m) => String -> MigrationsPath -> m ()
 addMigration name (MigrationsPath migrationsPath) = do
@@ -38,15 +38,15 @@ updateMigrations ::
 updateMigrations (MigrationsPath migrationsPath) = do
   migrations <- migrationsInDirectory migrationsPath
   forM_ migrations $ \migration ->
-    runDB $ handle (handleMigrationNotFound migration) $ updateMigration Nothing migration
+    runDB $ handle (handleMigrationNotFound migration) $ updateMigration schemaName migration
   where
     handleMigrationNotFound :: Migration -> MigrationNotFound -> DB ()
     handleMigrationNotFound migration _ = do
-      insertMigrations Nothing [migration]
+      insertMigrations schemaName [migration]
 
 listMigrations :: (MonadReader env m, MonadIO m, HasPostgresqlPool env) => Bool -> m ()
 listMigrations verbose = do
-  migrations <- runDB $ getMigrations Nothing
+  migrations <- runDB $ getMigrations schemaName
   forM_ migrations $ \migration -> do
     let outputString =
           if verbose
@@ -78,7 +78,7 @@ listMigrations verbose = do
 
 removeMigration' :: (MonadReader env m, MonadIO m, HasPostgresqlPool env) => FilePath -> m ()
 removeMigration' filename = do
-  runDB $ removeMigration Nothing filename
+  runDB $ removeMigration schemaName filename
 
 migrationTemplate :: Text
 migrationTemplate =
@@ -86,3 +86,6 @@ migrationTemplate =
 
 getCurrentTimeInFormat :: (MonadIO m) => m String
 getCurrentTimeInFormat = formatTime defaultTimeLocale Migration.timeFormat <$> getCurrentTime
+
+schemaName :: Maybe DatabaseSchema
+schemaName = Just "qdb"
