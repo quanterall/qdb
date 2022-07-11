@@ -18,29 +18,42 @@ import Types
 run :: Options -> AppCommand -> IO ()
 run _options (AddMigration name migrationsPath) = addMigration name migrationsPath
 run options (Migrate migrationsPath connectInfo) = do
-  app <- createApp options connectInfo
+  (app, teardown) <- createApp options connectInfo
   runRIO app $ migrateAll migrationsPath
+  teardown
 run options (Rollback migrationsPath connectInfo) = do
-  app <- createApp options connectInfo
+  (app, teardown) <- createApp options connectInfo
   runRIO app $ rollback migrationsPath
+  teardown
 run options (UpdateMigrations migrationsPath connectInfo) = do
-  app <- createApp options connectInfo
+  (app, teardown) <- createApp options connectInfo
   runRIO app $ updateMigrations migrationsPath
+  teardown
 run options (ListMigrations connectInfo) = do
-  app <- createApp options connectInfo
+  (app, teardown) <- createApp options connectInfo
   runRIO app $ listMigrations $ options ^. optionsVerbose
+  teardown
 run options (RemoveMigration name connectInfo) = do
-  app <- createApp options connectInfo
+  (app, teardown) <- createApp options connectInfo
   runRIO app $ removeMigration' name
+  teardown
 
-createApp :: Options -> ConnectionInfo -> IO App
+createApp :: Options -> ConnectionInfo -> IO (App, IO ())
 createApp options connectionInfo = do
-  lo <- logOptionsHandle stderr (options ^. optionsVerbose)
+  logOptions <- logOptionsHandle stderr (options ^. optionsVerbose)
   pc <- mkDefaultProcessContext
   pool <- case connectionInfo of
     ManualConnection connectInfo -> createConnectionPool 10 connectInfo
     RDSConnection secretArn -> do
       awsEnv <- loadAWSEnvironment ".env"
       createConnectionPoolForSecretArn' awsEnv 10 secretArn
-  withLogFunc lo $ \lf -> do
-    pure App {_appLogFunc = lf, _appProcessContext = pc, _appOptions = options, _appSqlPool = pool}
+  (logFunc, teardown) <- newLogFunc @IO @IO logOptions
+  pure
+    ( App
+        { _appLogFunc = logFunc,
+          _appProcessContext = pc,
+          _appOptions = options,
+          _appSqlPool = pool
+        },
+      teardown
+    )
