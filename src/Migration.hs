@@ -32,17 +32,27 @@ addMigration name (MigrationsPath migrationsPath) = do
   liftIO $ writeFileUtf8 (migrationsPath </> filename) migrationTemplate
 
 updateMigrations ::
-  (MonadReader env m, MonadIO m, MonadThrow m, HasPostgresqlPool env) =>
+  (MonadReader env m, MonadIO m, MonadThrow m, HasPostgresqlPool env, HasLogFunc env) =>
   MigrationsPath ->
   m ()
 updateMigrations (MigrationsPath migrationsPath) = do
   migrations <- migrationsInDirectory migrationsPath
-  forM_ migrations $ \migration ->
-    runDB $ handle (handleMigrationNotFound migration) $ updateMigration schemaName migration
+  logDebug $ "Migrations: " <> displayShow migrations
+  migrationOperations <- forM migrations $ \migration ->
+    runDB $
+      handle (handleMigrationNotFound migration) $ do
+        updateMigration schemaName migration
+        pure $ UpdatedMigration migration
+  forM_ migrationOperations $ \case
+    InsertedMigration migration ->
+      logDebug $ "Inserted migration: " <> displayShow migration
+    UpdatedMigration migration ->
+      logDebug $ "Updated migration: " <> displayShow migration
   where
-    handleMigrationNotFound :: Migration -> MigrationNotFound -> DB ()
+    handleMigrationNotFound :: Migration -> MigrationNotFound -> DB MigrationOperation
     handleMigrationNotFound migration _ = do
       insertMigrations schemaName [migration]
+      pure $ InsertedMigration migration
 
 listMigrations :: (MonadReader env m, MonadIO m, HasPostgresqlPool env) => Bool -> m ()
 listMigrations verbose = do

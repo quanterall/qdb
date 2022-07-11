@@ -7,6 +7,7 @@ import Database.PostgreSQL.Simple (ConnectInfo, Connection)
 import Network.AWS.QAWS.SecretsManager.Types (SecretARN)
 import Qtility
 import Qtility.Database (HasPostgresqlPool (..))
+import Qtility.Database.Types (Migration)
 import RIO.Process
 
 data ConfigurationFileOptions = ConfigurationFileOptions
@@ -35,6 +36,11 @@ data AppCommand
   | UpdateMigrations !MigrationsPath !ConnectionInfo
   | ListMigrations !ConnectionInfo
   | RemoveMigration !FilePath !ConnectionInfo
+  deriving (Eq, Show)
+
+data MigrationOperation
+  = InsertedMigration Migration
+  | UpdatedMigration Migration
   deriving (Eq, Show)
 
 data Options = Options {_optionsVerbose :: !Bool, _optionsConfigurationPath :: !FilePath}
