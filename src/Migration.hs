@@ -9,7 +9,6 @@ import Qtility.Database.Types
 import RIO.FilePath ((</>))
 import qualified RIO.Text as Text
 import RIO.Time (defaultTimeLocale, formatTime, getCurrentTime)
-import System.IO (putStrLn)
 import Types
 
 migrateAll ::
@@ -54,37 +53,34 @@ updateMigrations (MigrationsPath migrationsPath) = do
       insertMigrations schemaName [migration]
       pure $ InsertedMigration migration
 
-listMigrations :: (MonadReader env m, MonadIO m, HasPostgresqlPool env) => Bool -> m ()
+listMigrations :: (MonadReader env m, MonadIO m, HasPostgresqlPool env, HasLogFunc env) => Bool -> m ()
 listMigrations verbose = do
   migrations <- runDB $ getMigrations schemaName
   forM_ migrations $ \migration -> do
-    let outputString =
+    let outputString = [nameAndStatus] <> extraOutput & Text.intercalate "\n\n" & display
+        extraOutput =
           if verbose
             then
-              unlines
-                [ mconcat
-                    [ migration ^. migrationFilename,
-                      " | ",
-                      if migration ^. migrationIsApplied then "Applied" else "Not applied"
-                    ],
-                  migration ^. migrationUpStatement
-                    & Text.lines
-                    & fmap ("  " <>)
-                    & Text.unlines
-                    & Text.unpack,
-                  migration ^. migrationDownStatement
-                    & Text.lines
-                    & fmap ("  " <>)
-                    & Text.unlines
-                    & Text.unpack
-                ]
-            else
-              mconcat
-                [ migration ^. migrationFilename,
-                  " | ",
-                  if migration ^. migrationIsApplied then "Applied" else "Not applied"
-                ]
-    liftIO $ putStrLn outputString
+              [ "Up:",
+                migration ^. migrationUpStatement
+                  & Text.lines
+                  & fmap ("  " <>)
+                  & Text.unlines,
+                "Down:",
+                migration
+                  ^. migrationDownStatement
+                  & Text.lines
+                  & fmap ("  " <>)
+                  & Text.unlines
+              ]
+            else []
+        nameAndStatus =
+          mconcat
+            [ Text.pack $ migration ^. migrationFilename,
+              " | ",
+              if migration ^. migrationIsApplied then "Applied" else "Not applied"
+            ]
+    logInfo outputString
 
 removeMigration' :: (MonadReader env m, MonadIO m, HasPostgresqlPool env) => FilePath -> m ()
 removeMigration' filename = do
