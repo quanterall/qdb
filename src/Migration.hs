@@ -12,11 +12,12 @@ import RIO.Time (defaultTimeLocale, formatTime, getCurrentTime)
 import Types
 
 migrateAll ::
-  (MonadReader env m, MonadThrow m, MonadIO m, HasPostgresqlPool env) =>
+  (MonadReader env m, MonadThrow m, MonadIO m, HasPostgresqlPool env, HasLogFunc env) =>
   MigrationsPath ->
   m ()
-migrateAll (MigrationsPath migrationsPath) = do
-  _ <- createMigrationTable schemaName migrationsPath
+migrateAll migrationsPath = do
+  _ <- createMigrationTable schemaName $ migrationsPath ^. unwrap
+  updateMigrations migrationsPath
   runDB $ do
     unappliedMigrations <- getUnappliedMigrations schemaName
     applyMigrations schemaName unappliedMigrations
@@ -53,7 +54,10 @@ updateMigrations (MigrationsPath migrationsPath) = do
       insertMigrations schemaName [migration]
       pure $ InsertedMigration migration
 
-listMigrations :: (MonadReader env m, MonadIO m, HasPostgresqlPool env, HasLogFunc env) => Bool -> m ()
+listMigrations ::
+  (MonadReader env m, MonadIO m, HasPostgresqlPool env, HasLogFunc env) =>
+  Bool ->
+  m ()
 listMigrations verbose = do
   migrations <- runDB $ getMigrations schemaName
   forM_ migrations $ \migration -> do
