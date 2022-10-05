@@ -78,7 +78,8 @@ library
       TypeApplications
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -Wwarn=deprecations -Werror=incomplete-patterns
   build-depends:
-      base >=4.11 && <10
+      ansi-terminal
+    , base >=4.11 && <10
     , postgresql-simple
     , qaws
     , qaws-secretsmanager
@@ -141,7 +142,8 @@ executable qdb
       TypeApplications
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -Wwarn=deprecations -Werror=incomplete-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.11 && <10
+      ansi-terminal
+    , base >=4.11 && <10
     , optparse-simple
     , postgresql-simple
     , qaws
@@ -207,7 +209,8 @@ test-suite qdb-test
       TypeApplications
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -Wwarn=deprecations -Werror=incomplete-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.11 && <10
+      ansi-terminal
+    , base >=4.11 && <10
     , hspec
     , postgresql-simple
     , qaws
