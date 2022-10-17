@@ -45,8 +45,12 @@ updateMigrations (MigrationsPath migrationsPath) = do
   migrationOperations <- forM migrations $ \migration ->
     runDB $
       handle (handleMigrationNotFound migration) $ do
-        updateMigration schemaName migration
-        pure $ UpdatedMigration migration
+        oldMigration <- updateMigration schemaName migration
+        pure $
+          if (oldMigration ^. migrationUpStatement, oldMigration ^. migrationDownStatement)
+            == (migration ^. migrationUpStatement, migration ^. migrationDownStatement)
+            then UnchangedMigration migration
+            else UpdatedMigration migration
   forM_ migrationOperations $ \case
     InsertedMigration migration -> do
       liftIO $ setSGR [Codes.SetColor Codes.Foreground Codes.Vivid Codes.Green]
@@ -56,6 +60,7 @@ updateMigrations (MigrationsPath migrationsPath) = do
       liftIO $ setSGR [Codes.SetColor Codes.Foreground Codes.Vivid Codes.Yellow]
       liftIO $ putStrLn $ "Updated migration: " <> migration ^. migrationFilename
       liftIO $ setSGR [Codes.Reset]
+    UnchangedMigration _migration -> pure ()
   where
     handleMigrationNotFound :: Migration -> MigrationNotFound -> DB MigrationOperation
     handleMigrationNotFound migration _ = do
