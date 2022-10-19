@@ -41,6 +41,7 @@ data AppCommand
 data MigrationOperation
   = InsertedMigration Migration
   | UpdatedMigration Migration
+  | UnchangedMigration Migration
   deriving (Eq, Show)
 
 data Options = Options {_optionsVerbose :: !Bool, _optionsConfigurationPath :: !FilePath}

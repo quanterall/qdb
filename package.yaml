@@ -29,6 +29,7 @@ dependencies:
 - postgresql-simple
 - resource-pool
 - yaml
+- ansi-terminal
 
 default-extensions:
 - ApplicativeDo

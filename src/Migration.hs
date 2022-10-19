@@ -9,6 +9,9 @@ import Qtility.Database.Types
 import RIO.FilePath ((</>))
 import qualified RIO.Text as Text
 import RIO.Time (defaultTimeLocale, formatTime, getCurrentTime)
+import System.Console.ANSI (setSGR)
+import qualified System.Console.ANSI.Codes as Codes
+import System.IO (putStrLn)
 import Types
 
 migrateAll ::
@@ -36,32 +39,44 @@ updateMigrations ::
   MigrationsPath ->
   m ()
 updateMigrations (MigrationsPath migrationsPath) = do
+  createMigrationTable schemaName migrationsPath
   migrations <- migrationsInDirectory migrationsPath
   logDebug $ "Migrations: " <> displayShow migrations
   migrationOperations <- forM migrations $ \migration ->
     runDB $
       handle (handleMigrationNotFound migration) $ do
-        updateMigration schemaName migration
-        pure $ UpdatedMigration migration
+        oldMigration <- updateMigration schemaName migration
+        pure $
+          if oldMigration `equalUpDown` migration
+            then UnchangedMigration migration
+            else UpdatedMigration migration
   forM_ migrationOperations $ \case
-    InsertedMigration migration ->
-      logDebug $ "Inserted migration: " <> displayShow migration
-    UpdatedMigration migration ->
-      logDebug $ "Updated migration: " <> displayShow migration
+    InsertedMigration migration -> do
+      liftIO $ setSGR [Codes.SetColor Codes.Foreground Codes.Vivid Codes.Green]
+      liftIO $ putStrLn $ "Inserted migration: " <> migration ^. migrationFilename
+      liftIO $ setSGR [Codes.Reset]
+    UpdatedMigration migration -> do
+      liftIO $ setSGR [Codes.SetColor Codes.Foreground Codes.Vivid Codes.Yellow]
+      liftIO $ putStrLn $ "Updated migration: " <> migration ^. migrationFilename
+      liftIO $ setSGR [Codes.Reset]
+    UnchangedMigration _migration -> pure ()
   where
     handleMigrationNotFound :: Migration -> MigrationNotFound -> DB MigrationOperation
     handleMigrationNotFound migration _ = do
       insertMigrations schemaName [migration]
       pure $ InsertedMigration migration
+    equalUpDown oldMigration migration =
+      (oldMigration ^. migrationUpStatement, oldMigration ^. migrationDownStatement)
+        == (migration ^. migrationUpStatement, migration ^. migrationDownStatement)
 
 listMigrations ::
-  (MonadReader env m, MonadIO m, HasPostgresqlPool env, HasLogFunc env) =>
+  (MonadReader env m, MonadIO m, HasPostgresqlPool env) =>
   Bool ->
   m ()
 listMigrations verbose = do
   migrations <- runDB $ getMigrations schemaName
   forM_ migrations $ \migration -> do
-    let outputString = [nameAndStatus] <> extraOutput & Text.intercalate "\n\n" & display
+    let outputString = [nameAndStatus] <> extraOutput & Text.intercalate "\n\n" & Text.unpack
         extraOutput =
           if verbose
             then
@@ -84,7 +99,10 @@ listMigrations verbose = do
               " | ",
               if migration ^. migrationIsApplied then "Applied" else "Not applied"
             ]
-    logInfo outputString
+    let foregroundColor = migration ^. migrationIsApplied & bool Codes.Red Codes.Green
+    liftIO $ setSGR [Codes.SetColor Codes.Foreground Codes.Vivid foregroundColor]
+    liftIO $ putStrLn outputString
+    liftIO $ setSGR [Codes.Reset]
 
 removeMigration' :: (MonadReader env m, MonadIO m, HasPostgresqlPool env) => FilePath -> m ()
 removeMigration' filename = do
