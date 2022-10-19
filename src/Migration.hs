@@ -47,8 +47,7 @@ updateMigrations (MigrationsPath migrationsPath) = do
       handle (handleMigrationNotFound migration) $ do
         oldMigration <- updateMigration schemaName migration
         pure $
-          if (oldMigration ^. migrationUpStatement, oldMigration ^. migrationDownStatement)
-            == (migration ^. migrationUpStatement, migration ^. migrationDownStatement)
+          if oldMigration `equalUpDown` migration
             then UnchangedMigration migration
             else UpdatedMigration migration
   forM_ migrationOperations $ \case
@@ -66,6 +65,9 @@ updateMigrations (MigrationsPath migrationsPath) = do
     handleMigrationNotFound migration _ = do
       insertMigrations schemaName [migration]
       pure $ InsertedMigration migration
+    equalUpDown oldMigration migration =
+      (oldMigration ^. migrationUpStatement, oldMigration ^. migrationDownStatement)
+        == (migration ^. migrationUpStatement, migration ^. migrationDownStatement)
 
 listMigrations ::
   (MonadReader env m, MonadIO m, HasPostgresqlPool env) =>
