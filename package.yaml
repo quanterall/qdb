@@ -1,10 +1,10 @@
 name:                qdb
-version:             0.1.0.0
-github:              githubuser/qdb
+version:             0.2.0
+github:              quanterall/qdb
 license:             BSD3
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2022 Author name here
+author:              Rickard Andersson
+maintainer:          rickard.andersson@quanterall.com
+copyright:           2022 Rickard Andersson
 
 extra-source-files:
 - README.md
