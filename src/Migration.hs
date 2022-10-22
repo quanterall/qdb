@@ -9,13 +9,12 @@ import Qtility.Database.Types
 import RIO.FilePath ((</>))
 import qualified RIO.Text as Text
 import RIO.Time (defaultTimeLocale, formatTime, getCurrentTime)
-import System.Console.ANSI (setSGR)
 import qualified System.Console.ANSI.Codes as Codes
-import System.IO (putStrLn)
+import Terminal (Terminal (..), outputWithStyle, resetStyling)
 import Types
 
 migrateAll ::
-  (MonadReader env m, MonadThrow m, MonadIO m, HasPostgresqlPool env, HasLogFunc env) =>
+  (MonadReader env m, MonadThrow m, MonadIO m, Terminal m, HasPostgresqlPool env, HasLogFunc env) =>
   MigrationsPath ->
   m ()
 migrateAll migrationsPath = do
@@ -28,14 +27,22 @@ migrateAll migrationsPath = do
 rollback :: (MonadReader env m, MonadIO m, HasPostgresqlPool env) => Int -> m ()
 rollback n = runDB $ rollbackLastNMigrations schemaName (fromIntegral n)
 
-addMigration :: (MonadIO m) => String -> MigrationsPath -> m ()
+addMigration :: (MonadIO m, Terminal m) => String -> MigrationsPath -> m ()
 addMigration name (MigrationsPath migrationsPath) = do
   timestamp <- getCurrentTimeInFormat
   let filename = timestamp <> "_-_" <> name <> ".sql"
   liftIO $ writeFileUtf8 (migrationsPath </> filename) migrationTemplate
+  outputWithStyle [Codes.SetColor Codes.Foreground Codes.Vivid Codes.Green] $
+    "Created migration '" <> filename <> "'"
 
 updateMigrations ::
-  (MonadReader env m, MonadIO m, MonadThrow m, HasPostgresqlPool env, HasLogFunc env) =>
+  ( MonadReader env m,
+    MonadIO m,
+    MonadThrow m,
+    Terminal m,
+    HasPostgresqlPool env,
+    HasLogFunc env
+  ) =>
   MigrationsPath ->
   m ()
 updateMigrations (MigrationsPath migrationsPath) = do
@@ -52,13 +59,11 @@ updateMigrations (MigrationsPath migrationsPath) = do
             else UpdatedMigration migration
   forM_ migrationOperations $ \case
     InsertedMigration migration -> do
-      liftIO $ setSGR [Codes.SetColor Codes.Foreground Codes.Vivid Codes.Green]
-      liftIO $ putStrLn $ "Inserted migration: " <> migration ^. migrationFilename
-      liftIO $ setSGR [Codes.Reset]
+      outputWithStyle [Codes.SetColor Codes.Foreground Codes.Vivid Codes.Green] $
+        "Inserted migration: " <> migration ^. migrationFilename
     UpdatedMigration migration -> do
-      liftIO $ setSGR [Codes.SetColor Codes.Foreground Codes.Vivid Codes.Yellow]
-      liftIO $ putStrLn $ "Updated migration: " <> migration ^. migrationFilename
-      liftIO $ setSGR [Codes.Reset]
+      outputWithStyle [Codes.SetColor Codes.Foreground Codes.Vivid Codes.Yellow] $
+        "Updated migration: " <> migration ^. migrationFilename
     UnchangedMigration _migration -> pure ()
   where
     handleMigrationNotFound :: Migration -> MigrationNotFound -> DB MigrationOperation
@@ -70,7 +75,7 @@ updateMigrations (MigrationsPath migrationsPath) = do
         == (migration ^. migrationUpStatement, migration ^. migrationDownStatement)
 
 listMigrations ::
-  (MonadReader env m, MonadIO m, HasPostgresqlPool env) =>
+  (MonadReader env m, MonadIO m, Terminal m, HasPostgresqlPool env) =>
   Bool ->
   m ()
 listMigrations verbose = do
@@ -100,9 +105,9 @@ listMigrations verbose = do
               if migration ^. migrationIsApplied then "Applied" else "Not applied"
             ]
     let foregroundColor = migration ^. migrationIsApplied & bool Codes.Red Codes.Green
-    liftIO $ setSGR [Codes.SetColor Codes.Foreground Codes.Vivid foregroundColor]
-    liftIO $ putStrLn outputString
-    liftIO $ setSGR [Codes.Reset]
+    setStylingM [Codes.SetColor Codes.Foreground Codes.Vivid foregroundColor]
+    putStrLnM outputString
+    resetStyling
 
 removeMigration' :: (MonadReader env m, MonadIO m, HasPostgresqlPool env) => FilePath -> m ()
 removeMigration' filename = do
