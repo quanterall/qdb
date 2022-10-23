@@ -10,11 +10,11 @@ import RIO.FilePath ((</>))
 import qualified RIO.Text as Text
 import RIO.Time (defaultTimeLocale, formatTime, getCurrentTime)
 import qualified System.Console.ANSI.Codes as Codes
-import Terminal (Terminal (..), outputWithStyle, resetStyling)
+import Terminal (TerminalOut (..), outputWithStyle, resetStyling)
 import Types
 
 migrateAll ::
-  (MonadReader env m, MonadThrow m, MonadIO m, Terminal m, HasPostgresqlPool env, HasLogFunc env) =>
+  (MonadReader env m, MonadThrow m, MonadIO m, TerminalOut m, HasPostgresqlPool env, HasLogFunc env) =>
   MigrationsPath ->
   m ()
 migrateAll migrationsPath = do
@@ -27,7 +27,7 @@ migrateAll migrationsPath = do
 rollback :: (MonadReader env m, MonadIO m, HasPostgresqlPool env) => Int -> m ()
 rollback n = runDB $ rollbackLastNMigrations schemaName (fromIntegral n)
 
-addMigration :: (MonadIO m, Terminal m) => String -> MigrationsPath -> m ()
+addMigration :: (MonadIO m, TerminalOut m) => String -> MigrationsPath -> m ()
 addMigration name (MigrationsPath migrationsPath) = do
   timestamp <- getCurrentTimeInFormat
   let filename = timestamp <> "_-_" <> name <> ".sql"
@@ -39,7 +39,7 @@ updateMigrations ::
   ( MonadReader env m,
     MonadIO m,
     MonadThrow m,
-    Terminal m,
+    TerminalOut m,
     HasPostgresqlPool env,
     HasLogFunc env
   ) =>
@@ -75,7 +75,7 @@ updateMigrations (MigrationsPath migrationsPath) = do
         == (migration ^. migrationUpStatement, migration ^. migrationDownStatement)
 
 listMigrations ::
-  (MonadReader env m, MonadIO m, Terminal m, HasPostgresqlPool env) =>
+  (MonadReader env m, MonadIO m, TerminalOut m, HasPostgresqlPool env) =>
   Bool ->
   m ()
 listMigrations verbose = do
