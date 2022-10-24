@@ -1,20 +1,28 @@
 module Migration where
 
+import FileIO (FileOutput (..))
 import Qtility
 import Qtility.Database (DB, HasPostgresqlPool (..), runDB)
 import Qtility.Database.Migration
 import qualified Qtility.Database.Migration as Migration
 import Qtility.Database.Migration.Queries
 import Qtility.Database.Types
+import Qtility.Time.Class (CurrentTime (..))
 import RIO.FilePath ((</>))
 import qualified RIO.Text as Text
 import RIO.Time (defaultTimeLocale, formatTime, getCurrentTime)
 import qualified System.Console.ANSI.Codes as Codes
-import Terminal (TerminalOut (..), outputWithStyle, resetStyling)
+import Terminal (TerminalOutput (..), outputWithStyle, resetStyling)
 import Types
 
 migrateAll ::
-  (MonadReader env m, MonadThrow m, MonadIO m, TerminalOut m, HasPostgresqlPool env, HasLogFunc env) =>
+  ( MonadReader env m,
+    MonadThrow m,
+    MonadIO m,
+    TerminalOutput m,
+    HasPostgresqlPool env,
+    HasLogFunc env
+  ) =>
   MigrationsPath ->
   m ()
 migrateAll migrationsPath = do
@@ -27,11 +35,16 @@ migrateAll migrationsPath = do
 rollback :: (MonadReader env m, MonadIO m, HasPostgresqlPool env) => Int -> m ()
 rollback n = runDB $ rollbackLastNMigrations schemaName (fromIntegral n)
 
-addMigration :: (MonadIO m, TerminalOut m) => String -> MigrationsPath -> m ()
+addMigration ::
+  (MonadIO m, TerminalOutput m, FileOutput m, CurrentTime m) =>
+  String ->
+  MigrationsPath ->
+  m ()
 addMigration name (MigrationsPath migrationsPath) = do
+  createDirectoryM migrationsPath
   timestamp <- getCurrentTimeInFormat
   let filename = timestamp <> "_-_" <> name <> ".sql"
-  liftIO $ writeFileUtf8 (migrationsPath </> filename) migrationTemplate
+  writeFileM (migrationsPath </> filename) migrationTemplate
   outputWithStyle [Codes.SetColor Codes.Foreground Codes.Vivid Codes.Green] $
     "Created migration '" <> filename <> "'"
 
@@ -39,7 +52,7 @@ updateMigrations ::
   ( MonadReader env m,
     MonadIO m,
     MonadThrow m,
-    TerminalOut m,
+    TerminalOutput m,
     HasPostgresqlPool env,
     HasLogFunc env
   ) =>
@@ -75,7 +88,7 @@ updateMigrations (MigrationsPath migrationsPath) = do
         == (migration ^. migrationUpStatement, migration ^. migrationDownStatement)
 
 listMigrations ::
-  (MonadReader env m, MonadIO m, TerminalOut m, HasPostgresqlPool env) =>
+  (MonadReader env m, MonadIO m, TerminalOutput m, HasPostgresqlPool env) =>
   Bool ->
   m ()
 listMigrations verbose = do
@@ -117,8 +130,8 @@ migrationTemplate :: Text
 migrationTemplate =
   Text.unlines ["SELECT 1 + 1;", "", "-- DOWN", "", "SELECT 1 + 1;"]
 
-getCurrentTimeInFormat :: (MonadIO m) => m String
-getCurrentTimeInFormat = formatTime defaultTimeLocale Migration.timeFormat <$> getCurrentTime
+getCurrentTimeInFormat :: (CurrentTime m) => m String
+getCurrentTimeInFormat = formatTime defaultTimeLocale Migration.timeFormat <$> getCurrentTimeM
 
 schemaName :: Maybe DatabaseSchema
 schemaName = Just "qdb"

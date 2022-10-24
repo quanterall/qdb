@@ -1,5 +1,5 @@
 module Terminal
-  ( TerminalOut (..),
+  ( TerminalOutput (..),
     resetStyling,
     outputWithStyle,
   )
@@ -10,23 +10,23 @@ import System.Console.ANSI (SGR (..), setSGR)
 import System.IO (putStrLn)
 import Types
 
-outputWithStyle :: (TerminalOut m) => [SGR] -> String -> m ()
+outputWithStyle :: (TerminalOutput m) => [SGR] -> String -> m ()
 outputWithStyle styling text = do
   setStylingM styling
   putStrLnM text
   resetStyling
 
-resetStyling :: (TerminalOut m) => m ()
+resetStyling :: (TerminalOutput m) => m ()
 resetStyling = setStylingM [Reset]
 
-class (Monad m) => TerminalOut m where
+class (Monad m) => TerminalOutput m where
   putStrLnM :: String -> m ()
   setStylingM :: [SGR] -> m ()
 
-instance TerminalOut IO where
+instance TerminalOutput IO where
   putStrLnM = putStrLn
   setStylingM = setSGR
 
-instance TerminalOut (RIO App) where
+instance TerminalOutput (RIO App) where
   putStrLnM = putStrLn >>> liftIO
   setStylingM = setSGR >>> liftIO
