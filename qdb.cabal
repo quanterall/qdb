@@ -27,6 +27,7 @@ library
   exposed-modules:
       FileIO
       Migration
+      Migration.Class
       Run
       Terminal
       Types

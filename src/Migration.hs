@@ -1,42 +1,40 @@
 module Migration where
 
 import FileIO (FileOutput (..))
+import Migration.Class (ApplyMigrations (..), ReadMigrations (..), WriteMigrations (..))
 import Qtility
-import Qtility.Database (DB, HasPostgresqlPool (..), runDB)
 import Qtility.Database.Migration
 import qualified Qtility.Database.Migration as Migration
-import Qtility.Database.Migration.Queries
 import Qtility.Database.Types
 import Qtility.Time.Class (CurrentTime (..))
 import RIO.FilePath ((</>))
 import qualified RIO.Text as Text
 import RIO.Time (defaultTimeLocale, formatTime)
 import qualified System.Console.ANSI.Codes as Codes
-import Terminal (TerminalOutput (..), outputWithStyle, resetStyling)
+import Terminal (TerminalOutput (..), debugOutput, outputWithStyle, resetStyling)
 import Types
 
 migrateAll ::
-  ( MonadReader env m,
-    MonadThrow m,
-    MonadIO m,
+  ( MonadThrow m,
+    MonadUnliftIO m,
     TerminalOutput m,
-    HasPostgresqlPool env,
-    HasLogFunc env
+    WriteMigrations m,
+    ReadMigrations m,
+    ApplyMigrations m
   ) =>
   MigrationsPath ->
   m ()
 migrateAll migrationsPath = do
-  _ <- createMigrationTable schemaName $ migrationsPath ^. unwrap
+  _ <- createMigrationTableM $ migrationsPath ^. unwrap
   updateMigrations migrationsPath
-  runDB $ do
-    unappliedMigrations <- getUnappliedMigrations schemaName
-    applyMigrations schemaName unappliedMigrations
+  unappliedMigrations <- getUnappliedMigrationsM
+  applyMigrationsM unappliedMigrations
 
-rollback :: (MonadReader env m, MonadIO m, HasPostgresqlPool env) => Int -> m ()
-rollback n = runDB $ rollbackLastNMigrations schemaName (fromIntegral n)
+rollback :: (ApplyMigrations m) => Int -> m ()
+rollback = rollbackMigrationsM
 
 addMigration ::
-  (MonadIO m, TerminalOutput m, FileOutput m, CurrentTime m) =>
+  (TerminalOutput m, FileOutput m, CurrentTime m) =>
   String ->
   MigrationsPath ->
   m ()
@@ -49,27 +47,21 @@ addMigration name (MigrationsPath migrationsPath) = do
     "Created migration '" <> filename <> "'"
 
 updateMigrations ::
-  ( MonadReader env m,
-    MonadIO m,
-    MonadThrow m,
-    TerminalOutput m,
-    HasPostgresqlPool env,
-    HasLogFunc env
-  ) =>
+  forall m.
+  (MonadUnliftIO m, MonadThrow m, TerminalOutput m, WriteMigrations m) =>
   MigrationsPath ->
   m ()
 updateMigrations (MigrationsPath migrationsPath) = do
-  createMigrationTable schemaName migrationsPath
+  createMigrationTableM migrationsPath
   migrations <- migrationsInDirectory migrationsPath
-  logDebug $ "Migrations: " <> displayShow migrations
+  debugOutput $ "Migrations: " <> show migrations
   migrationOperations <- forM migrations $ \migration ->
-    runDB $
-      handle (handleMigrationNotFound migration) $ do
-        oldMigration <- updateMigration schemaName migration
-        pure $
-          if oldMigration `equalUpDown` migration
-            then UnchangedMigration migration
-            else UpdatedMigration migration
+    handle (handleMigrationNotFound migration) $ do
+      oldMigration <- updateMigrationM migration
+      pure $
+        if oldMigration `equalUpDown` migration
+          then UnchangedMigration migration
+          else UpdatedMigration migration
   forM_ migrationOperations $ \case
     InsertedMigration migration -> do
       outputWithStyle [Codes.SetColor Codes.Foreground Codes.Vivid Codes.Green] $
@@ -79,20 +71,17 @@ updateMigrations (MigrationsPath migrationsPath) = do
         "Updated migration: " <> migration ^. migrationFilename
     UnchangedMigration _migration -> pure ()
   where
-    handleMigrationNotFound :: Migration -> MigrationNotFound -> DB MigrationOperation
+    handleMigrationNotFound :: Migration -> MigrationNotFound -> m MigrationOperation
     handleMigrationNotFound migration _ = do
-      insertMigrations schemaName [migration]
+      insertMigrationM migration
       pure $ InsertedMigration migration
     equalUpDown oldMigration migration =
       (oldMigration ^. migrationUpStatement, oldMigration ^. migrationDownStatement)
         == (migration ^. migrationUpStatement, migration ^. migrationDownStatement)
 
-listMigrations ::
-  (MonadReader env m, MonadIO m, TerminalOutput m, HasPostgresqlPool env) =>
-  Bool ->
-  m ()
+listMigrations :: (TerminalOutput m, ReadMigrations m) => Bool -> m ()
 listMigrations verbose = do
-  migrations <- runDB $ getMigrations schemaName
+  migrations <- getMigrationsM
   forM_ migrations $ \migration -> do
     let outputString = [nameAndStatus] <> extraOutput & Text.intercalate "\n\n" & Text.unpack
         extraOutput =
@@ -122,9 +111,8 @@ listMigrations verbose = do
     putStrLnM outputString
     resetStyling
 
-removeMigration' :: (MonadReader env m, MonadIO m, HasPostgresqlPool env) => FilePath -> m ()
-removeMigration' filename = do
-  runDB $ removeMigration schemaName filename
+removeMigration' :: (WriteMigrations m) => FilePath -> m ()
+removeMigration' = removeMigrationM
 
 migrationTemplate :: Text
 migrationTemplate =
