@@ -10,7 +10,7 @@ import Qtility.Database.Types
 import Qtility.Time.Class (CurrentTime (..))
 import RIO.FilePath ((</>))
 import qualified RIO.Text as Text
-import RIO.Time (defaultTimeLocale, formatTime, getCurrentTime)
+import RIO.Time (defaultTimeLocale, formatTime)
 import qualified System.Console.ANSI.Codes as Codes
 import Terminal (TerminalOutput (..), outputWithStyle, resetStyling)
 import Types
