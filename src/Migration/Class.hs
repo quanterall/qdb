@@ -18,7 +18,7 @@ import Qtility.Database.Migration.Queries
     updateMigration,
   )
 import Qtility.Database.Types (DatabaseSchema, Migration)
-import Types (App)
+import Types (App, MigrationsPath (..))
 
 class (Monad m) => ReadMigrations m where
   getMigrationsM :: m [Migration]
@@ -30,13 +30,13 @@ instance ReadMigrations (RIO App) where
 
 class (Monad m) => WriteMigrations m where
   removeMigrationM :: FilePath -> m ()
-  createMigrationTableM :: FilePath -> m [Migration]
+  createMigrationTableM :: MigrationsPath -> m [Migration]
   updateMigrationM :: Migration -> m Migration
   insertMigrationM :: Migration -> m ()
 
 instance WriteMigrations (RIO App) where
   removeMigrationM = removeMigration schemaName >>> runDB
-  createMigrationTableM = createMigrationTable schemaName
+  createMigrationTableM = (^. unwrap) >>> createMigrationTable schemaName
   updateMigrationM = updateMigration schemaName >>> runDB
   insertMigrationM = pure >>> insertMigrations schemaName >>> runDB
 

@@ -1,11 +1,10 @@
 module Migration where
 
-import FileIO (FileOutput (..))
 import Migration.Class (ApplyMigrations (..), ReadMigrations (..), WriteMigrations (..))
 import Qtility
-import Qtility.Database.Migration
 import qualified Qtility.Database.Migration as Migration
 import Qtility.Database.Types
+import Qtility.FileSystem (FileSystemWrite (..))
 import Qtility.Time.Class (CurrentTime (..))
 import RIO.FilePath ((</>))
 import qualified RIO.Text as Text
@@ -25,7 +24,7 @@ migrateAll ::
   MigrationsPath ->
   m ()
 migrateAll migrationsPath = do
-  _ <- createMigrationTableM $ migrationsPath ^. unwrap
+  _ <- createMigrationTableM migrationsPath
   updateMigrations migrationsPath
   unappliedMigrations <- getUnappliedMigrationsM
   applyMigrationsM unappliedMigrations
@@ -34,12 +33,12 @@ rollback :: (ApplyMigrations m) => Int -> m ()
 rollback = rollbackMigrationsM
 
 addMigration ::
-  (TerminalOutput m, FileOutput m, CurrentTime m) =>
+  (TerminalOutput m, FileSystemWrite m, CurrentTime m) =>
   String ->
   MigrationsPath ->
   m ()
 addMigration name (MigrationsPath migrationsPath) = do
-  createDirectoryM migrationsPath
+  makeDirectoryM True migrationsPath
   timestamp <- getCurrentTimeInFormat
   let filename = timestamp <> "_-_" <> name <> ".sql"
   writeFileM (migrationsPath </> filename) migrationTemplate
@@ -48,12 +47,12 @@ addMigration name (MigrationsPath migrationsPath) = do
 
 updateMigrations ::
   forall m.
-  (MonadUnliftIO m, MonadThrow m, TerminalOutput m, WriteMigrations m) =>
+  (MonadUnliftIO m, TerminalOutput m, WriteMigrations m, ReadMigrations m) =>
   MigrationsPath ->
   m ()
-updateMigrations (MigrationsPath migrationsPath) = do
-  createMigrationTableM migrationsPath
-  migrations <- migrationsInDirectory migrationsPath
+updateMigrations path = do
+  createMigrationTableM path
+  migrations <- migrationsInDirectoryM path
   debugOutput $ "Migrations: " <> show migrations
   migrationOperations <- forM migrations $ \migration ->
     handle (handleMigrationNotFound migration) $ do

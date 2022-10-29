@@ -22,7 +22,7 @@ data ConfigurationFileOptions = ConfigurationFileOptions
   deriving (Eq, Show, Generic)
 
 newtype MigrationsPath = MigrationsPath {unMigrationsPath :: FilePath}
-  deriving (Eq, Show)
+  deriving (Eq, Show, Ord)
 
 data ConnectionInfo
   = RDSConnection !SecretARN
