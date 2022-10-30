@@ -3,9 +3,9 @@
 
 module TestUtilities where
 
+import Control.Lens (_1)
 import Data.Pool (Pool)
 import Database.PostgreSQL.Simple (Connection)
-import FileIO (FileOutput (..))
 import Migration.Class (ReadMigrations (..), WriteMigrations (..))
 import Qtility
 import Qtility.Database (HasPostgresqlPool (..))
@@ -15,11 +15,14 @@ import Qtility.Database.Types
     migrationFilename,
     migrationIsApplied,
   )
+import Qtility.FileSystem (ReadFileSystem (..), WriteFileSystem (..))
 import Qtility.Time.Class (CurrentTime (..))
+import RIO.FilePath (dropTrailingPathSeparator, splitFileName)
 import qualified RIO.Map as Map
 import RIO.Time (UTCTime)
 import qualified RIO.Vector as Vector
 import System.Console.ANSI (SGR)
+import qualified System.IO.Error as IOError
 import Terminal (TerminalOutput (..))
 import Types (MigrationsPath (..))
 
@@ -28,7 +31,7 @@ data TestState = TestState
     _testStateStyling :: IORef [SGR],
     _testStateIsVerbose :: IORef Bool,
     _testStateSqlPool :: ~(Pool Connection),
-    _testStateFiles :: IORef (Map FilePath Text),
+    _testStateFiles :: IORef (Map FilePath (Map FilePath Text)),
     _testStateCurrentTime :: IORef UTCTime,
     _testStateMigrations :: IORef (Map FilePath Migration)
   }
@@ -50,13 +53,6 @@ instance TerminalOutput (RIO TestState) where
 
   isVerboseM = view testStateIsVerbose >>= readIORef
 
-instance FileOutput (RIO TestState) where
-  createDirectoryM _ = pure ()
-
-  writeFileM path content = do
-    files <- view testStateFiles
-    modifyIORef' files $ Map.insert path content
-
 instance CurrentTime (RIO TestState) where
   getCurrentTimeM = view testStateCurrentTime >>= readIORef
 
@@ -64,10 +60,6 @@ instance WriteMigrations (RIO TestState) where
   removeMigrationM path = do
     migrations <- view testStateMigrations
     modifyIORef' migrations (Map.delete path)
-
-  -- createMigrationTableM path = do
-  --   migrationsInDirectory <- view testStateMigrationsInDirectory >>= readIORef
-  --   pure $ Map.findWithDefault [] path migrationsInDirectory
 
   updateMigrationM migration = do
     migrations <- view testStateMigrations
@@ -88,6 +80,64 @@ instance ReadMigrations (RIO TestState) where
 
   getUnappliedMigrationsM = filter ((^. migrationIsApplied) >>> not) <$> getMigrationsM
 
-  migrationsInDirectoryM path = do
-    fileMap <- view testStateMigrationsInDirectory >>= readIORef
-    pure $ Map.findWithDefault [] path fileMap
+instance ReadFileSystem (RIO TestState) where
+  readFileM path = do
+    let (directory, filename) = path & splitFileName & _1 %~ dropTrailingPathSeparator
+    files <- view testStateFiles >>= readIORef
+    case Map.lookup directory files >>= Map.lookup filename of
+      Just contents -> pure contents
+      Nothing ->
+        throwM $ IOError.mkIOError IOError.doesNotExistErrorType "readFileM" Nothing (Just path)
+
+  readByteStringFileM path = do
+    let (dir, file) = splitFileName path
+    files <- view testStateFiles >>= readIORef
+    case Map.lookup dir files >>= Map.lookup file of
+      Just contents -> pure $ encodeUtf8 contents
+      Nothing ->
+        throwM $
+          IOError.mkIOError IOError.doesNotExistErrorType "readByteStringFileM" Nothing (Just path)
+
+  listDirectoryM path = do
+    files <- view testStateFiles >>= readIORef
+    case Map.lookup path files of
+      Just contents -> pure $ Map.keys contents
+      Nothing ->
+        throwM $
+          IOError.mkIOError IOError.doesNotExistErrorType "listDirectoryM" Nothing (Just path)
+
+  doesDirectoryExistM path = do
+    files <- view testStateFiles >>= readIORef
+    pure $ Map.member path files
+
+  doesFileExistM path = do
+    let (dir, file) = splitFileName path
+    files <- view testStateFiles >>= readIORef
+    case Map.lookup dir files of
+      Just contents -> pure $ Map.member file contents
+      Nothing -> pure False
+
+instance WriteFileSystem (RIO TestState) where
+  writeFileM path contents = do
+    let (dir, file) = path & splitFileName & _1 %~ dropTrailingPathSeparator
+    files <- view testStateFiles
+    modifyIORef' files $ Map.alter (fromMaybe Map.empty >>> Map.insert file contents >>> Just) dir
+
+  writeByteStringFileM path contents = do
+    let (dir, file) = splitFileName path
+    files <- view testStateFiles
+    modifyIORef' files $
+      Map.alter (fromMaybe Map.empty >>> Map.insert file (decodeUtf8Lenient contents) >>> Just) dir
+
+  removeFileM path = do
+    let (dir, file) = splitFileName path
+    files <- view testStateFiles
+    modifyIORef' files $ Map.alter (fromMaybe Map.empty >>> Map.delete file >>> Just) dir
+
+  makeDirectoryM _createParents path = do
+    files <- view testStateFiles
+    modifyIORef' files $ Map.insertWith (<>) path Map.empty
+
+  removeDirectoryM path = do
+    files <- view testStateFiles
+    modifyIORef' files $ Map.delete path

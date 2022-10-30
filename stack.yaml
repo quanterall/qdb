@@ -8,7 +8,7 @@ extra-deps:
 - amazonka-1.6.1@sha256:f58b63e83876f93aa03c54e54b3eb8ba9358af93819d41f4a5a8f8b7d8b8399c,3544
 - amazonka-secretsmanager-1.6.1@sha256:f3e7266e8b19b214c721c49c50d24b7a6cc1ed280a1e481eabf08dc507e38f5d,3795
 - github: quanterall/qtility
-  commit: 797c84dd5207e5d84510f1c4cca089c3aa3a5f2e
+  commit: 8a0a16da912cd1592cb632a2868739a8d0a27abb
   subdirs:
   - qtility
   - qtility-db

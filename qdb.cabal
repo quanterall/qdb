@@ -83,6 +83,7 @@ library
   build-depends:
       ansi-terminal
     , base >=4.11 && <10
+    , lens
     , postgresql-simple
     , qaws
     , qaws-secretsmanager
@@ -147,6 +148,7 @@ executable qdb
   build-depends:
       ansi-terminal
     , base >=4.11 && <10
+    , lens
     , optparse-simple
     , postgresql-simple
     , qaws
@@ -217,6 +219,7 @@ test-suite qdb-test
       ansi-terminal
     , base >=4.11 && <10
     , hspec
+    , lens
     , postgresql-simple
     , qaws
     , qaws-secretsmanager

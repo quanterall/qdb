@@ -2,9 +2,10 @@ module Migration where
 
 import Migration.Class (ApplyMigrations (..), ReadMigrations (..), WriteMigrations (..))
 import Qtility
+import Qtility.Database.Migration (migrationsInDirectory)
 import qualified Qtility.Database.Migration as Migration
 import Qtility.Database.Types
-import Qtility.FileSystem (FileSystemWrite (..))
+import Qtility.FileSystem (ReadFileSystem, WriteFileSystem (..))
 import Qtility.Time.Class (CurrentTime (..))
 import RIO.FilePath ((</>))
 import qualified RIO.Text as Text
@@ -19,6 +20,7 @@ migrateAll ::
     TerminalOutput m,
     WriteMigrations m,
     ReadMigrations m,
+    ReadFileSystem m,
     ApplyMigrations m
   ) =>
   MigrationsPath ->
@@ -33,7 +35,7 @@ rollback :: (ApplyMigrations m) => Int -> m ()
 rollback = rollbackMigrationsM
 
 addMigration ::
-  (TerminalOutput m, FileSystemWrite m, CurrentTime m) =>
+  (TerminalOutput m, WriteFileSystem m, CurrentTime m) =>
   String ->
   MigrationsPath ->
   m ()
@@ -47,12 +49,17 @@ addMigration name (MigrationsPath migrationsPath) = do
 
 updateMigrations ::
   forall m.
-  (MonadUnliftIO m, TerminalOutput m, WriteMigrations m, ReadMigrations m) =>
+  ( MonadUnliftIO m,
+    TerminalOutput m,
+    WriteMigrations m,
+    ReadFileSystem m,
+    MonadThrow m
+  ) =>
   MigrationsPath ->
   m ()
 updateMigrations path = do
   createMigrationTableM path
-  migrations <- migrationsInDirectoryM path
+  migrations <- migrationsInDirectory $ path ^. unwrap
   debugOutput $ "Migrations: " <> show migrations
   migrationOperations <- forM migrations $ \migration ->
     handle (handleMigrationNotFound migration) $ do

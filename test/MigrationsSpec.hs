@@ -1,8 +1,8 @@
 module MigrationsSpec where
 
-import Migration (addMigration, getCurrentTimeInFormat, listMigrations, updateMigrations)
-import Migration.Class (ReadMigrations (..))
+import Migration (addMigration, getCurrentTimeInFormat)
 import Qtility
+import Qtility.Database.Migration (migrationsInDirectory)
 import Qtility.Database.Types (Migration (..))
 import qualified RIO.Map as Map
 import RIO.Time (getCurrentTime)
@@ -19,19 +19,24 @@ spec = do
       outputLines <- liftIO $ newIORef mempty
       styling <- liftIO $ newIORef []
       isVerbose <- liftIO $ newIORef False
-      files <- liftIO $ newIORef mempty
+      let migration1Text =
+            mconcat ["SELECT 1 + 1;\n\n", "-- DOWN", "\n\n", "SELECT 1 - 1;\n"]
+      files <-
+        [("migrations", Map.fromList [("2022-10-28_22-53-45_-_test1.sql", migration1Text)])]
+          & Map.fromList
+          & newIORef
+          & liftIO
       currentTime <- liftIO getCurrentTime >>= newIORef
       migrationsRef <- liftIO $ newIORef mempty
       let migration1 =
             Migration
-              { _migrationFilename = "test1.sql",
-                _migrationUpStatement = "",
-                _migrationDownStatement = "",
-                _migrationTimestamp = Time.UTCTime (Time.fromGregorian 2022 10 28) 0,
+              { _migrationFilename = "2022-10-28_22-53-45_-_test1.sql",
+                _migrationUpStatement = "SELECT 1 + 1;",
+                _migrationDownStatement = "SELECT 1 - 1;",
+                _migrationTimestamp =
+                  Time.UTCTime (Time.fromGregorian 2022 10 28) (22 * 3600 + 53 * 60 + 45),
                 _migrationIsApplied = False
               }
-      migrationsInDirectoryRef <-
-        [(MigrationsPath "migrations", [migration1])] & Map.fromList & newIORef
       let testState =
             TestState
               { _testStateOutputLines = outputLines,
@@ -40,12 +45,11 @@ spec = do
                 _testStateFiles = files,
                 _testStateCurrentTime = currentTime,
                 _testStateSqlPool = undefined,
-                _testStateMigrations = migrationsRef,
-                _testStateMigrationsInDirectory = migrationsInDirectoryRef
+                _testStateMigrations = migrationsRef
               }
       currentTimeString <- runRIO testState getCurrentTimeInFormat
 
-      migrationsInPath1 <- runRIO testState $ migrationsInDirectoryM (MigrationsPath "migrations")
+      migrationsInPath1 <- runRIO testState $ migrationsInDirectory "migrations"
       migrationsInPath1 `shouldBe` [migration1]
 
       runRIO testState $ do
@@ -60,6 +64,5 @@ spec = do
               ]
           ]
 
-      migrationsInPath2 <- runRIO testState $ migrationsInDirectoryM (MigrationsPath "migrations")
-      traceShowM migrationsInPath2
+      migrationsInPath2 <- runRIO testState $ migrationsInDirectory "migrations"
       length migrationsInPath2 `shouldBe` 2
