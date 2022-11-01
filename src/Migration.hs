@@ -1,80 +1,93 @@
 module Migration where
 
+import Migration.Class (ApplyMigrations (..), ReadMigrations (..), WriteMigrations (..))
 import Qtility
-import Qtility.Database (DB, HasPostgresqlPool (..), runDB)
-import Qtility.Database.Migration
+import Qtility.Database.Migration (migrationsInDirectory)
 import qualified Qtility.Database.Migration as Migration
-import Qtility.Database.Migration.Queries
 import Qtility.Database.Types
+import Qtility.FileSystem (ReadFileSystem, WriteFileSystem (..))
+import Qtility.Time.Class (CurrentTime (..))
 import RIO.FilePath ((</>))
 import qualified RIO.Text as Text
-import RIO.Time (defaultTimeLocale, formatTime, getCurrentTime)
-import System.Console.ANSI (setSGR)
+import RIO.Time (defaultTimeLocale, formatTime)
 import qualified System.Console.ANSI.Codes as Codes
-import System.IO (putStrLn)
+import Terminal (TerminalOutput (..), debugOutput, outputWithStyle, resetStyling)
 import Types
 
 migrateAll ::
-  (MonadReader env m, MonadThrow m, MonadIO m, HasPostgresqlPool env, HasLogFunc env) =>
+  ( MonadThrow m,
+    MonadUnliftIO m,
+    TerminalOutput m,
+    WriteMigrations m,
+    ReadMigrations m,
+    ReadFileSystem m,
+    ApplyMigrations m
+  ) =>
   MigrationsPath ->
   m ()
 migrateAll migrationsPath = do
-  _ <- createMigrationTable schemaName $ migrationsPath ^. unwrap
+  _ <- createMigrationTableM migrationsPath
   updateMigrations migrationsPath
-  runDB $ do
-    unappliedMigrations <- getUnappliedMigrations schemaName
-    applyMigrations schemaName unappliedMigrations
+  unappliedMigrations <- getUnappliedMigrationsM
+  applyMigrationsM unappliedMigrations
 
-rollback :: (MonadReader env m, MonadIO m, HasPostgresqlPool env) => Int -> m ()
-rollback n = runDB $ rollbackLastNMigrations schemaName (fromIntegral n)
+rollback :: (ApplyMigrations m) => Int -> m ()
+rollback = rollbackMigrationsM
 
-addMigration :: (MonadIO m) => String -> MigrationsPath -> m ()
-addMigration name (MigrationsPath migrationsPath) = do
-  timestamp <- getCurrentTimeInFormat
-  let filename = timestamp <> "_-_" <> name <> ".sql"
-  liftIO $ writeFileUtf8 (migrationsPath </> filename) migrationTemplate
-
-updateMigrations ::
-  (MonadReader env m, MonadIO m, MonadThrow m, HasPostgresqlPool env, HasLogFunc env) =>
+addMigration ::
+  (TerminalOutput m, WriteFileSystem m, CurrentTime m) =>
+  String ->
   MigrationsPath ->
   m ()
-updateMigrations (MigrationsPath migrationsPath) = do
-  createMigrationTable schemaName migrationsPath
-  migrations <- migrationsInDirectory migrationsPath
-  logDebug $ "Migrations: " <> displayShow migrations
+addMigration name (MigrationsPath migrationsPath) = do
+  makeDirectoryM True migrationsPath
+  timestamp <- getCurrentTimeInFormat
+  let filename = timestamp <> "_-_" <> name <> ".sql"
+  writeFileM (migrationsPath </> filename) migrationTemplate
+  outputWithStyle [Codes.SetColor Codes.Foreground Codes.Vivid Codes.Green] $
+    "Created migration '" <> filename <> "'"
+
+updateMigrations ::
+  forall m.
+  ( MonadUnliftIO m,
+    TerminalOutput m,
+    WriteMigrations m,
+    ReadFileSystem m,
+    MonadThrow m
+  ) =>
+  MigrationsPath ->
+  m ()
+updateMigrations path = do
+  createMigrationTableM path
+  migrations <- migrationsInDirectory $ path ^. unwrap
+  debugOutput $ "Migrations: " <> show migrations
   migrationOperations <- forM migrations $ \migration ->
-    runDB $
-      handle (handleMigrationNotFound migration) $ do
-        oldMigration <- updateMigration schemaName migration
-        pure $
-          if oldMigration `equalUpDown` migration
-            then UnchangedMigration migration
-            else UpdatedMigration migration
+    handle (handleMigrationNotFound migration) $ do
+      oldMigration <- updateMigrationM migration
+      pure $
+        if oldMigration `equalUpDown` migration
+          then UnchangedMigration migration
+          else UpdatedMigration migration
   forM_ migrationOperations $ \case
     InsertedMigration migration -> do
-      liftIO $ setSGR [Codes.SetColor Codes.Foreground Codes.Vivid Codes.Green]
-      liftIO $ putStrLn $ "Inserted migration: " <> migration ^. migrationFilename
-      liftIO $ setSGR [Codes.Reset]
+      outputWithStyle [Codes.SetColor Codes.Foreground Codes.Vivid Codes.Green] $
+        "Inserted migration: " <> migration ^. migrationFilename
     UpdatedMigration migration -> do
-      liftIO $ setSGR [Codes.SetColor Codes.Foreground Codes.Vivid Codes.Yellow]
-      liftIO $ putStrLn $ "Updated migration: " <> migration ^. migrationFilename
-      liftIO $ setSGR [Codes.Reset]
+      outputWithStyle [Codes.SetColor Codes.Foreground Codes.Vivid Codes.Yellow] $
+        "Updated migration: " <> migration ^. migrationFilename
     UnchangedMigration _migration -> pure ()
   where
-    handleMigrationNotFound :: Migration -> MigrationNotFound -> DB MigrationOperation
+    handleMigrationNotFound :: Migration -> MigrationNotFound -> m MigrationOperation
     handleMigrationNotFound migration _ = do
-      insertMigrations schemaName [migration]
+      insertMigrationM migration
       pure $ InsertedMigration migration
     equalUpDown oldMigration migration =
       (oldMigration ^. migrationUpStatement, oldMigration ^. migrationDownStatement)
         == (migration ^. migrationUpStatement, migration ^. migrationDownStatement)
 
-listMigrations ::
-  (MonadReader env m, MonadIO m, HasPostgresqlPool env) =>
-  Bool ->
-  m ()
+listMigrations :: (TerminalOutput m, ReadMigrations m) => Bool -> m ()
 listMigrations verbose = do
-  migrations <- runDB $ getMigrations schemaName
+  migrations <- getMigrationsM
   forM_ migrations $ \migration -> do
     let outputString = [nameAndStatus] <> extraOutput & Text.intercalate "\n\n" & Text.unpack
         extraOutput =
@@ -100,20 +113,19 @@ listMigrations verbose = do
               if migration ^. migrationIsApplied then "Applied" else "Not applied"
             ]
     let foregroundColor = migration ^. migrationIsApplied & bool Codes.Red Codes.Green
-    liftIO $ setSGR [Codes.SetColor Codes.Foreground Codes.Vivid foregroundColor]
-    liftIO $ putStrLn outputString
-    liftIO $ setSGR [Codes.Reset]
+    setStylingM [Codes.SetColor Codes.Foreground Codes.Vivid foregroundColor]
+    putStrLnM outputString
+    resetStyling
 
-removeMigration' :: (MonadReader env m, MonadIO m, HasPostgresqlPool env) => FilePath -> m ()
-removeMigration' filename = do
-  runDB $ removeMigration schemaName filename
+removeMigration' :: (WriteMigrations m) => FilePath -> m ()
+removeMigration' = removeMigrationM
 
 migrationTemplate :: Text
 migrationTemplate =
   Text.unlines ["SELECT 1 + 1;", "", "-- DOWN", "", "SELECT 1 + 1;"]
 
-getCurrentTimeInFormat :: (MonadIO m) => m String
-getCurrentTimeInFormat = formatTime defaultTimeLocale Migration.timeFormat <$> getCurrentTime
+getCurrentTimeInFormat :: (CurrentTime m) => m String
+getCurrentTimeInFormat = formatTime defaultTimeLocale Migration.timeFormat <$> getCurrentTimeM
 
 schemaName :: Maybe DatabaseSchema
 schemaName = Just "qdb"

@@ -26,57 +26,57 @@ packages:
   original:
     hackage: amazonka-secretsmanager-1.6.1@sha256:f3e7266e8b19b214c721c49c50d24b7a6cc1ed280a1e481eabf08dc507e38f5d,3795
 - completed:
-    size: 63698
+    size: 64429
     subdir: qtility
-    url: https://github.com/quanterall/qtility/archive/000c544a5b7e4c00a9ce6257a6ac7712e831448b.tar.gz
+    url: https://github.com/quanterall/qtility/archive/170bb9f98c534e2afa8dc88227b72d21b0e089aa.tar.gz
     name: qtility
     version: 1.3.0
-    sha256: 0337e266b8d2271bd4152262b5d7d7d0118d86c593669f0ccba644c3960562dd
+    sha256: 837a1423a87d7623290ce705ed8180f70e35e8fb5209ea30ff18a95356da042a
     pantry-tree:
-      size: 1657
-      sha256: f4f6355cbd038534203af04e23df70a11484f8d8c55c1ec75de186759277f3ea
+      size: 1723
+      sha256: e147201583341dbf6513f44eeced4b36916e007dc2f8942be03750c334886e36
   original:
     subdir: qtility
-    url: https://github.com/quanterall/qtility/archive/000c544a5b7e4c00a9ce6257a6ac7712e831448b.tar.gz
+    url: https://github.com/quanterall/qtility/archive/170bb9f98c534e2afa8dc88227b72d21b0e089aa.tar.gz
 - completed:
-    size: 63698
+    size: 64429
     subdir: qtility-db
-    url: https://github.com/quanterall/qtility/archive/000c544a5b7e4c00a9ce6257a6ac7712e831448b.tar.gz
+    url: https://github.com/quanterall/qtility/archive/170bb9f98c534e2afa8dc88227b72d21b0e089aa.tar.gz
     name: qtility-db
     version: 0.0.0
-    sha256: 0337e266b8d2271bd4152262b5d7d7d0118d86c593669f0ccba644c3960562dd
+    sha256: 837a1423a87d7623290ce705ed8180f70e35e8fb5209ea30ff18a95356da042a
     pantry-tree:
       size: 1321
-      sha256: ff2f78ec4020053cbab1789219a9fe04d5dd4b2b15c692b8beeb67971bce95fb
+      sha256: 2e5254e96358e0784ca680bfb1292ddcb1b7b23876d8d1502036a90baf136fd9
   original:
     subdir: qtility-db
-    url: https://github.com/quanterall/qtility/archive/000c544a5b7e4c00a9ce6257a6ac7712e831448b.tar.gz
+    url: https://github.com/quanterall/qtility/archive/170bb9f98c534e2afa8dc88227b72d21b0e089aa.tar.gz
 - completed:
-    size: 63698
+    size: 64429
     subdir: qaws
-    url: https://github.com/quanterall/qtility/archive/000c544a5b7e4c00a9ce6257a6ac7712e831448b.tar.gz
+    url: https://github.com/quanterall/qtility/archive/170bb9f98c534e2afa8dc88227b72d21b0e089aa.tar.gz
     name: qaws
     version: 0.0.0
-    sha256: 0337e266b8d2271bd4152262b5d7d7d0118d86c593669f0ccba644c3960562dd
+    sha256: 837a1423a87d7623290ce705ed8180f70e35e8fb5209ea30ff18a95356da042a
     pantry-tree:
       size: 388
       sha256: 34db4e31df756eeebe4015d3539f3182d4c8d439b4f1dacf0047b8f6df67798f
   original:
     subdir: qaws
-    url: https://github.com/quanterall/qtility/archive/000c544a5b7e4c00a9ce6257a6ac7712e831448b.tar.gz
+    url: https://github.com/quanterall/qtility/archive/170bb9f98c534e2afa8dc88227b72d21b0e089aa.tar.gz
 - completed:
-    size: 63698
+    size: 64429
     subdir: qaws-secretsmanager
-    url: https://github.com/quanterall/qtility/archive/000c544a5b7e4c00a9ce6257a6ac7712e831448b.tar.gz
+    url: https://github.com/quanterall/qtility/archive/170bb9f98c534e2afa8dc88227b72d21b0e089aa.tar.gz
     name: qaws-secretsmanager
     version: 0.0.0
-    sha256: 0337e266b8d2271bd4152262b5d7d7d0118d86c593669f0ccba644c3960562dd
+    sha256: 837a1423a87d7623290ce705ed8180f70e35e8fb5209ea30ff18a95356da042a
     pantry-tree:
       size: 431
-      sha256: 5327644421d681e69b9c901db4e761ad4ccbff711c1ee4cf9e52925179a9b3f4
+      sha256: 18d746224aa365c057511e3c49ea84c0872331090b97f6419c398a4d210c4b29
   original:
     subdir: qaws-secretsmanager
-    url: https://github.com/quanterall/qtility/archive/000c544a5b7e4c00a9ce6257a6ac7712e831448b.tar.gz
+    url: https://github.com/quanterall/qtility/archive/170bb9f98c534e2afa8dc88227b72d21b0e089aa.tar.gz
 snapshots:
 - completed:
     size: 590100

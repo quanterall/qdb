@@ -25,8 +25,11 @@ source-repository head
 
 library
   exposed-modules:
+      FileIO
       Migration
+      Migration.Class
       Run
+      Terminal
       Types
   other-modules:
       Paths_qdb
@@ -80,6 +83,7 @@ library
   build-depends:
       ansi-terminal
     , base >=4.11 && <10
+    , lens
     , postgresql-simple
     , qaws
     , qaws-secretsmanager
@@ -144,6 +148,7 @@ executable qdb
   build-depends:
       ansi-terminal
     , base >=4.11 && <10
+    , lens
     , optparse-simple
     , postgresql-simple
     , qaws
@@ -160,6 +165,8 @@ test-suite qdb-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      MigrationsSpec
+      TestUtilities
       Paths_qdb
   hs-source-dirs:
       test
@@ -212,6 +219,7 @@ test-suite qdb-test
       ansi-terminal
     , base >=4.11 && <10
     , hspec
+    , lens
     , postgresql-simple
     , qaws
     , qaws-secretsmanager

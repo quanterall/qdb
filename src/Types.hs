@@ -8,6 +8,8 @@ import Network.AWS.QAWS.SecretsManager.Types (SecretARN)
 import Qtility
 import Qtility.Database (HasPostgresqlPool (..))
 import Qtility.Database.Types (Migration)
+import Qtility.FileSystem (ReadFileSystem (..))
+import RIO.Directory (doesDirectoryExist, doesFileExist, listDirectory)
 import RIO.Process
 
 data ConfigurationFileOptions = ConfigurationFileOptions
@@ -22,7 +24,7 @@ data ConfigurationFileOptions = ConfigurationFileOptions
   deriving (Eq, Show, Generic)
 
 newtype MigrationsPath = MigrationsPath {unMigrationsPath :: FilePath}
-  deriving (Eq, Show)
+  deriving (Eq, Show, Ord)
 
 data ConnectionInfo
   = RDSConnection !SecretARN
@@ -68,3 +70,10 @@ instance HasProcessContext App where
 
 instance HasPostgresqlPool App where
   postgresqlPoolL = appSqlPool
+
+instance ReadFileSystem (RIO App) where
+  readFileM = readFileUtf8 >>> liftIO
+  readByteStringFileM = readFileBinary >>> liftIO
+  listDirectoryM = listDirectory >>> liftIO
+  doesFileExistM = doesFileExist >>> liftIO
+  doesDirectoryExistM = doesDirectoryExist >>> liftIO

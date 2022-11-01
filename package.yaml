@@ -30,6 +30,7 @@ dependencies:
 - resource-pool
 - yaml
 - ansi-terminal
+- lens
 
 default-extensions:
 - ApplicativeDo
