@@ -1,9 +1,9 @@
 module MigrationsSpec where
 
-import Migration (addMigration, getCurrentTimeInFormat)
+import Migration (addMigration, getCurrentTimeInFormat, updateMigrations)
 import Qtility
 import Qtility.Database.Migration (migrationsInDirectory)
-import Qtility.Database.Types (Migration (..))
+import Qtility.Database.Types (Migration (..), _MigrationIncorrectFilename)
 import qualified RIO.Map as Map
 import RIO.Time (getCurrentTime)
 import qualified RIO.Time as Time
@@ -90,9 +90,8 @@ spec = do
                 _testStateMigrations = migrationsRef
               }
 
-      runRIO
-        testState
-        ( do
-            addMigration "migration-name" $ MigrationsPath "migrations"
-        )
-        `shouldThrow` anyException
+      runRIO testState (updateMigrations $ MigrationsPath "migrations")
+        `shouldThrow` isA @SomeException _MigrationIncorrectFilename
+
+isA :: Prism' a b -> a -> Bool
+isA p v = v ^? p & isJust

@@ -9,6 +9,7 @@ import Database.PostgreSQL.Simple (Connection)
 import Migration.Class (ReadMigrations (..), WriteMigrations (..))
 import Qtility
 import Qtility.Database (HasPostgresqlPool (..))
+import Qtility.Database.Migration (migrationsInDirectory)
 import Qtility.Database.Types
   ( Migration (..),
     MigrationNotFound (..),
@@ -24,7 +25,6 @@ import qualified RIO.Vector as Vector
 import System.Console.ANSI (SGR)
 import qualified System.IO.Error as IOError
 import Terminal (TerminalOutput (..))
-import Types (MigrationsPath (..))
 
 data TestState = TestState
   { _testStateOutputLines :: IORef (Vector String),
@@ -72,6 +72,8 @@ instance WriteMigrations (RIO TestState) where
   insertMigrationM migration = do
     migrations <- view testStateMigrations
     modifyIORef' migrations $ Map.insert (migration ^. migrationFilename) migration
+
+  createMigrationTableM = (^. unwrap) >>> migrationsInDirectory
 
 instance ReadMigrations (RIO TestState) where
   getMigrationsM = do
