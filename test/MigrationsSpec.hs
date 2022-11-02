@@ -66,3 +66,33 @@ spec = do
 
       migrationsInPath2 <- runRIO testState $ migrationsInDirectory "migrations"
       length migrationsInPath2 `shouldBe` 2
+    it "Should fail to read a badly named migration file" $ do
+      outputLines <- liftIO $ newIORef mempty
+      styling <- liftIO $ newIORef []
+      isVerbose <- liftIO $ newIORef False
+      let migration1Text =
+            mconcat ["SELECT 1 + 1;\n\n", "-- DOWN", "\n\n", "SELECT 1 - 1;\n"]
+      files <-
+        [("migrations", Map.fromList [("20221028_22-53-45_-_test1.sql", migration1Text)])]
+          & Map.fromList
+          & newIORef
+          & liftIO
+      currentTime <- liftIO getCurrentTime >>= newIORef
+      migrationsRef <- liftIO $ newIORef mempty
+      let testState =
+            TestState
+              { _testStateOutputLines = outputLines,
+                _testStateStyling = styling,
+                _testStateIsVerbose = isVerbose,
+                _testStateFiles = files,
+                _testStateCurrentTime = currentTime,
+                _testStateSqlPool = undefined,
+                _testStateMigrations = migrationsRef
+              }
+
+      runRIO
+        testState
+        ( do
+            addMigration "migration-name" $ MigrationsPath "migrations"
+        )
+        `shouldThrow` anyException
