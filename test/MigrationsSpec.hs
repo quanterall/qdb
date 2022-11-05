@@ -70,6 +70,22 @@ spec = do
 
       migrationsInPath2 <- runRIO testState $ migrationsInDirectory "migrations"
       length migrationsInPath2 `shouldBe` 2
+
+      runRIO testState $ updateMigrations $ MigrationsPath "migrations"
+      currentMigrations <- runRIO testState $ readIORef migrationsRef
+      length currentMigrations `shouldBe` 2
+
+      liftIO (readIORef outputLines)
+        `shouldReturn` Vector.fromList
+          [ mconcat
+              [ "Created migration '",
+                currentTimeString,
+                "_-_migration-name.sql'"
+              ],
+            "Inserted migration: 2022-10-28_22-53-45_-_test1.sql",
+            mconcat ["Inserted migration: ", currentTimeString, "_-_migration-name.sql"]
+          ]
+
     it "Should fail to read a badly named migration file" $ do
       outputLines <- liftIO $ newIORef mempty
       styling <- liftIO $ newIORef []
