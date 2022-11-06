@@ -65,15 +65,6 @@ spec = do
       runRIO testState $ do
         addMigration "migration-name" $ MigrationsPath "migrations"
 
-      liftIO (readIORef outputLines)
-        `shouldReturn` Vector.fromList
-          [ mconcat
-              [ "Created migration '",
-                currentTimeString,
-                "_-_migration-name.sql'"
-              ]
-          ]
-
       migrationsInPath2 <- runRIO testState $ migrationsInDirectory "migrations"
       length migrationsInPath2 `shouldBe` 2
 
@@ -131,15 +122,6 @@ spec = do
 
       runRIO testState $ do
         addMigration "migration-name" $ MigrationsPath "migrations"
-
-      liftIO (readIORef outputLines)
-        `shouldReturn` Vector.fromList
-          [ mconcat
-              [ "Created migration '",
-                currentTimeString,
-                "_-_migration-name.sql'"
-              ]
-          ]
 
       migrationsInPath2 <- runRIO testState $ migrationsInDirectory "migrations"
       length migrationsInPath2 `shouldBe` 2
