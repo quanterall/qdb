@@ -1,6 +1,12 @@
 module MigrationsSpec where
 
-import Migration (addMigration, getCurrentTimeInFormat, migrateAll, updateMigrations)
+import Migration
+  ( addMigration,
+    getCurrentTimeInFormat,
+    listMigrations,
+    migrateAll,
+    updateMigrations,
+  )
 import Qtility
 import Qtility.Database.Migration (migrationsInDirectory)
 import Qtility.Database.Types
@@ -142,6 +148,7 @@ spec = do
       currentMigrations <- runRIO testState $ readIORef migrationsRef
       length currentMigrations `shouldBe` 2
 
+      runRIO testState $ listMigrations False
       liftIO (readIORef outputLines)
         `shouldReturn` Vector.fromList
           [ mconcat
@@ -150,7 +157,9 @@ spec = do
                 "_-_migration-name.sql'"
               ],
             "Inserted migration: 2022-10-28_22-53-45_-_test1.sql",
-            mconcat ["Inserted migration: ", currentTimeString, "_-_migration-name.sql"]
+            mconcat ["Inserted migration: ", currentTimeString, "_-_migration-name.sql"],
+            "2022-10-28_22-53-45_-_test1.sql | Applied",
+            mconcat [currentTimeString, "_-_migration-name.sql | Applied"]
           ]
 
     it "Should fail to read a badly named migration file" $ do
