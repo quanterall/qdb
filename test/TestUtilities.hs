@@ -3,10 +3,12 @@
 
 module TestUtilities where
 
-import Control.Lens (_1)
+import Control.Lens (_1, _2)
+import Control.Lens.Indexed (indices)
+import Control.Lens.Traversal (traversed)
 import Data.Pool (Pool)
 import Database.PostgreSQL.Simple (Connection)
-import Migration.Class (ReadMigrations (..), WriteMigrations (..))
+import Migration.Class (ApplyMigrations (..), ReadMigrations (..), WriteMigrations (..))
 import Qtility
 import Qtility.Database (HasPostgresqlPool (..))
 import Qtility.Database.Migration (migrationsInDirectory)
@@ -19,6 +21,7 @@ import Qtility.Database.Types
 import Qtility.FileSystem (ReadFileSystem (..), WriteFileSystem (..))
 import Qtility.Time.Class (CurrentTime (..))
 import RIO.FilePath (dropTrailingPathSeparator, splitFileName)
+import RIO.List (sortOn)
 import qualified RIO.Map as Map
 import RIO.Time (UTCTime)
 import qualified RIO.Vector as Vector
@@ -81,6 +84,28 @@ instance ReadMigrations (RIO TestState) where
     pure $ Map.elems migrations
 
   getUnappliedMigrationsM = filter ((^. migrationIsApplied) >>> not) <$> getMigrationsM
+
+instance ApplyMigrations (RIO TestState) where
+  rollbackMigrationsM n = do
+    migrationsReference <- view testStateMigrations
+    modifyIORef' migrationsReference setAsUnApplied
+    where
+      setAsUnApplied ms =
+        ms
+          & Map.toList
+          & sortOn (^. _2 . migrationFilename)
+          & traversed . indices (<= n) . _2 %~ (migrationIsApplied .~ False)
+          & Map.fromList
+
+  applyMigrationsM migrationsToApply = do
+    migrationsReference <- view testStateMigrations
+    modifyIORef' migrationsReference setAsApplied
+    where
+      setAsApplied currentMigrations =
+        migrationsToApply
+          & fmap (\m -> (m ^. migrationFilename, m))
+          & Map.fromList
+          & Map.unionWith (\new _old -> new & migrationIsApplied .~ True) currentMigrations
 
 instance ReadFileSystem (RIO TestState) where
   readFileM path = do
