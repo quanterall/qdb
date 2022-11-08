@@ -199,5 +199,32 @@ spec = do
       runRIO testState (updateMigrations $ MigrationsPath "migrations")
         `shouldThrow` isA @SomeException _MigrationIncorrectFormat
 
+    it "Should not change migration status of any migrations when calling `updateMigrations`" $ do
+      outputLines <- liftIO $ newIORef mempty
+      styling <- liftIO $ newIORef []
+      isVerbose <- liftIO $ newIORef False
+      files <-
+        [("migrations", Map.fromList [("2022-10-28_22-53-45_-_test1.sql", "SELECT 1 + 1;\n\n-- DOWN\n\nSELECT 1 - 1;\n")])]
+          & Map.fromList
+          & newIORef
+          & liftIO
+      currentTime <- liftIO getCurrentTime >>= newIORef
+      migrationsRef <- liftIO $ newIORef mempty
+      let testState =
+            TestState
+              { _testStateOutputLines = outputLines,
+                _testStateStyling = styling,
+                _testStateIsVerbose = isVerbose,
+                _testStateFiles = files,
+                _testStateCurrentTime = currentTime,
+                _testStateSqlPool = undefined,
+                _testStateMigrations = migrationsRef
+              }
+
+      runRIO testState (updateMigrations $ MigrationsPath "migrations")
+      currentMigrations <- runRIO testState $ readIORef migrationsRef
+      length currentMigrations `shouldBe` 1
+      currentMigrations `shouldSatisfy` (any _migrationIsApplied >>> not)
+
 isA :: Prism' a b -> a -> Bool
 isA p v = v ^? p & isJust
