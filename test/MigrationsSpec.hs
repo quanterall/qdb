@@ -130,7 +130,8 @@ spec = do
       currentMigrations <- runRIO testState $ readIORef migrationsRef
       length currentMigrations `shouldBe` 2
 
-      runRIO testState $ listMigrations False
+      runRIO testState $ listMigrations False -- not verbose
+      runRIO testState $ listMigrations True -- verbose
       liftIO (readIORef outputLines)
         `shouldReturn` Vector.fromList
           [ mconcat
@@ -141,7 +142,22 @@ spec = do
             "Inserted migration: 2022-10-28_22-53-45_-_test1.sql",
             mconcat ["Inserted migration: ", currentTimeString, "_-_migration-name.sql"],
             "2022-10-28_22-53-45_-_test1.sql | Applied",
-            mconcat [currentTimeString, "_-_migration-name.sql | Applied"]
+            mconcat [currentTimeString, "_-_migration-name.sql | Applied"],
+            mconcat
+              [ "2022-10-28_22-53-45_-_test1.sql | Applied\n\n",
+                "Up:\n\n",
+                "  SELECT 1 + 1;\n\n\n",
+                "Down:\n\n",
+                "  SELECT 1 - 1;\n"
+              ],
+            mconcat
+              [ currentTimeString,
+                "_-_migration-name.sql | Applied\n\n",
+                "Up:\n\n",
+                "  SELECT 1 + 1;\n\n\n",
+                "Down:\n\n",
+                "  SELECT 1 + 1;\n"
+              ]
           ]
 
     it "Should fail to read a badly named migration file" $ do
@@ -204,7 +220,14 @@ spec = do
       styling <- liftIO $ newIORef []
       isVerbose <- liftIO $ newIORef False
       files <-
-        [("migrations", Map.fromList [("2022-10-28_22-53-45_-_test1.sql", "SELECT 1 + 1;\n\n-- DOWN\n\nSELECT 1 - 1;\n")])]
+        [ ( "migrations",
+            Map.fromList
+              [ ( "2022-10-28_22-53-45_-_test1.sql",
+                  "SELECT 1 + 1;\n\n-- DOWN\n\nSELECT 1 - 1;\n"
+                )
+              ]
+          )
+          ]
           & Map.fromList
           & newIORef
           & liftIO
